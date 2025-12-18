@@ -1,276 +1,248 @@
-# 🧠 Machine Learning Aided Decompilation and Malicious Code Analysis
+# B12 – Intelligent Decompilation and Malware Analysis using LLMs
 
-This project integrates **Ghidra**, **Machine Learning**, and a **Flask web interface** for analyzing and decompiling binary code.
+This repository contains **B12**, a research‑oriented project that integrates **LLM‑based binary decompilation**, **Ghidra automation**, and a **Flask + ngrok API** for remote analysis. The system is designed for **educational and research purposes only**.
 
-## 🚀 Features
-- Upload `.o` or `.asm` files
-- AI/LLM-based decompilation
-- Ghidra-based decompilation
-- Real-time **Code Severity Gauge** (speedometer visualization)
+---
 
-## 🧩 Setup
-1. Clone the repository:
-   ```bash
-   git clone https://github.com//Chefjdeep/B12.git
-   cd B12
+## 📌 Project Overview
 
-========================================
-Severity Scoring Rules — 0..100 Scale
-========================================
+B12 combines:
 
-Purpose
--------
-This document defines a rule-based severity scoring system for decompiled
-code (C / assembly). The severity score ranges from 0 to 100 and is intended
-to indicate potential harm/exploitability:
-  - 0..20   => Low / Safe
-  - 21..60  => Medium risk
-  - 61..100 => High / Malicious
+* **LLM4Decompile** (as a Git submodule) for ASM → C decompilation using large language models
+* **Ghidra headless decompiler** for classical binary analysis
+* **Flask API** backend
+* **ngrok** for exposing Colab‑hosted models to a local or web UI
+* Optional **severity scoring** logic for suspicious or malicious code patterns
 
-Guiding principle
------------------
-Compute a weighted sum of detected suspicious features, apply caps and
-small negative weight for benign operations, then clamp the result to [0,100].
-Optionally smooth the final value for display stability.
+The project supports:
 
-Feature categories and suggested weights
-----------------------------------------
-Each detection contributes to the score. The weights below are starting
-recommendations; tune according to your dataset and model.
+* Uploading assembly or object files
+* LLM‑based decompilation
+* Ghidra‑based decompilation
+* Integration with a frontend UI
 
-1) Dangerous functions (examples)
-   - system, exec*, popen, popen2, strcpy, gets, sprintf, memcpy misuse
-   - weight_per_occurrence: 10
+---
 
-2) Self-modifying / shellcode-like behavior
-   - writing executable bytes to memory, inline shellcode arrays, mprotect+write+exec pattern,
-     function-pointer execution of memory region
-   - weight_flag: 50 (if detected at least once)
+## ⚠️ Disclaimer
 
-3) Memory safety issues
-   - unbounded copy to fixed buffer, use-after-free, double-free, unsafe casts
-   - weight_per_detected_issue: 25
+This project may include **malware‑like code samples** for testing and research.
 
-4) External untrusted input influence
-   - reading data from stdin, files, environment variables, command-line args, network
-   - weight_flag: 10
+**DO NOT execute any generated or sample code on a live or production system.**
+Use isolated VMs or sandbox environments only.
 
-5) Network or system control
-   - socket/connect/bind, fork+exec for remote persistence, registry edits (Windows)
-   - weight_per_occurrence: 30
+---
 
-6) Obfuscation / encoding / dynamic API resolution
-   - XOR/rotate loops over strings, encoded payloads decoded at runtime
-   - weight_flag: 25
+## 📁 Repository Structure
 
-7) Privilege escalation attempts
-   - setuid, setgid, chown to sensitive paths, writing to /etc, modifying ACLs
-   - weight_flag: 40
+```
+B12/
+├── app.py                     # Main Flask backend (LLM + Ghidra routes)
+├── templates/
+│   └── ghidra.html            # Optional web UI
+├── LLM4Decompile/             # Git submodule (LLM4Binary project)
+├── Ghidra_decompiled/         # Output directory (ignored in git)
+├── temp_saves/                # Temporary Ghidra workspace (ignored)
+├── requirements.txt           # Python dependencies (optional)
+├── .gitignore
+└── README.md
+```
 
-8) Benign operations (negative weight)
-   - printf, basic arithmetic, standard file write (non-destructive)
-   - negative_weight_per_occurrence: -5
+---
 
-Scoring formula (pseudocode)
----------------------------
-1. Initialize score = 0
-2. For each dangerous function occurrence: score += 10 * count
-3. If shellcode-like behavior detected: score += 50
-4. For memory-safety issues detected: score += 25 * count
-5. If external untrusted input used: score += 10
-6. For each network/system control occurrence: score += 30 * count
-7. If obfuscation detected: score += 25
-8. If privilege escalation pattern detected: score += 40
-9. Subtract benign operations influence: score += (-5) * benign_count
-10. Clip score to [0, 100]
-11. Optionally apply smoothing:
-      final = int(0.7 * score + 0.3 * previous_score)   // reduce needle jitter
+## 🧩 Prerequisites
 
-Example
--------
-- Code with strcpy (1), reads file input (flag), and no other flags:
-  score = 10 (strcpy) + 10 (external input) = 20  -> Low / borderline medium.
+### System Requirements
 
-- Code with shellcode array + exec via function pointer:
-  score = 50 (shellcode) + maybe +10 (if external input) = 60 -> High.
+* Python **3.10+**
+* Linux or macOS (Apple Silicon supported)
+* At least **12–16 GB RAM** recommended
+* GPU recommended (CUDA or Apple MPS)
 
-Python implementation (rule-based detector)
-------------------------------------------
-# Save this block as severity_rules.py or copy into your backend.
-# This is a simple deterministic feature-based scorer.
-# It assumes you pass in a plain text string `code_text` (decompiled C/ASM).
-# The detector is intentionally conservative and interpretable.
+### External Tools
 
-import re
+* **Java 17+** (required for Ghidra)
+* **Ghidra 11.x** (installed locally)
 
-# Precompiled regexes for detection
-DANGEROUS_FUNCS = [
-    r'\\bsystem\\s*\\(',
-    r'\\bexecv\\s*\\(',
-    r'\\bexecvp\\s*\\(',
-    r'\\bpopen\\s*\\(',
-    r'\\bstrcpy\\s*\\(',
-    r'\\bgets\\s*\\(',
-    r'\\bsprintf\\s*\\(',
-    r'\\bmemcpy\\s*\\('
-]
+---
 
-SHELLCODE_PATTERNS = [
-    r'unsigned char\\s+.*shellcode',      # shellcode array
-    r'0x[0-9A-Fa-f]{2}\\s*,\\s*0x[0-9A-Fa-f]{2}',  # byte array pattern
-    r'\\bmprotect\\b',
-    r'\\bVirtualAlloc\\b.*MEM_COMMIT',     # windows style
-    r'\\bPROT_EXEC\\b'
-]
+## 🔗 Clone the Repository
 
-MEMORY_ISSUE_PATTERNS = [
-    r'\\bstrcpy\\b',      # also counted as dangerous func
-    r'\\bstrcat\\b',
-    r'\\bgets\\b',
-    r'\\bmemcpy\\b.*\\bsizeof\\b',  # suspicious memcpy without bound checks
-    r'\\bfree\\b.*\\bfree\\b'       # double-free simple heuristic (pattern match approximate)
-]
+```bash
+git clone https://github.com/Chefjdeep/B12.git
+cd B12
+```
 
-NETWORK_FUNCTIONS = [
-    r'\\bsocket\\b',
-    r'\\bconnect\\b',
-    r'\\bbind\\b',
-    r'\\blisten\\b',
-    r'\\bsend\\b',
-    r'\\brecv\\b'
-]
+Initialize the submodule:
 
-OBFUSCATION_PATTERNS = [
-    r'for\\s*\\(.*xor',   # xor loops
-    r'\\bxor\\b.*\\b0x',
-    r'decode\\(',         # common decode function name
-    r'base64_decode'      # common name
-]
+```bash
+git submodule update --init --recursive
+```
 
-PRIV_ESC_PATTERNS = [
-    r'\\bsetuid\\b',
-    r'\\bsetgid\\b',
-    r'\\bchown\\b',
-    r'\\bchmod\\b'
-]
+---
 
-BENIGN_PATTERNS = [
-    r'\\bprintf\\b',
-    r'\\bscanf\\b',
-    r'\\bmalloc\\b',   # neutral but can be listed as benign influence
-    r'\\bfopen\\b'
-]
+## 🐍 Python Environment Setup
 
-def count_matches(patterns, text):
-    total = 0
-    for p in patterns:
-        total += len(re.findall(p, text, flags=re.IGNORECASE))
-    return total
+Create and activate a virtual environment:
 
-def detect_flag(patterns, text):
-    for p in patterns:
-        if re.search(p, text, flags=re.IGNORECASE):
-            return True
-    return False
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-def compute_severity(code_text, previous_score=0):
-    """
-    Compute severity (0..100) from code_text.
-    previous_score: optional int to smooth the output visually.
-    Returns: dict { 'score': int, 'label': str, 'details': {...} }
-    """
-    text = code_text or ""
-    score = 0
+Install dependencies:
 
-    # Dangerous function occurrences
-    dangerous_count = count_matches(DANGEROUS_FUNCS, text)
-    score += 10 * dangerous_count
+```bash
+pip install torch transformers flask flask-cors pyngrok accelerate
+```
 
-    # Shellcode-like behavior (flag)
-    if detect_flag(SHELLCODE_PATTERNS, text):
-        score += 50
+---
 
-    # Memory safety issues
-    memory_issues = count_matches(MEMORY_ISSUE_PATTERNS, text)
-    score += 25 * memory_issues
+## 🧠 Running the LLM Decompiler Locally
 
-    # External input influence (flag)
-    if re.search(r'\\b(stdin|fgets|fread|recvfrom|recv|read\\(|open\\(|fopen\\()\\b', text, flags=re.IGNORECASE):
-        score += 10
+Edit the model path if required:
 
-    # Network / system control functions
-    network_count = count_matches(NETWORK_FUNCTIONS, text)
-    score += 30 * network_count
+```python
+MODEL_PATH = "LLM4Binary/llm4decompile-1.3b-v1.5"
+```
 
-    # Obfuscation detection
-    if detect_flag(OBFUSCATION_PATTERNS, text):
-        score += 25
+Run the Flask server:
 
-    # Privilege escalation attempts
-    if detect_flag(PRIV_ESC_PATTERNS, text):
-        score += 40
+```bash
+python app.py
+```
 
-    # Benign operations reduce confidence slightly
-    benign_count = count_matches(BENIGN_PATTERNS, text)
-    score += (-5) * benign_count
+The API will be available at:
 
-    # Ensure integer and clamp
-    score = int(round(score))
-    if score < 0:
-        score = 0
-    if score > 100:
-        score = 100
+```
+http://localhost:5000
+```
 
-    # Optional smoothing for UI (prevent needle jitter)
-    if previous_score is not None:
-        smoothed = int(round(0.7 * score + 0.3 * previous_score))
-        score = smoothed
+---
 
-    # Label
-    if score < 30:
-        label = "Low"
-    elif score < 70:
-        label = "Medium"
-    else:
-        label = "High"
+## 🌍 Running on Google Colab with ngrok (Recommended)
 
-    details = {
-        'dangerous_count': dangerous_count,
-        'memory_issues': memory_issues,
-        'network_count': network_count,
-        'benign_count': benign_count,
-        'shellcode_detected': detect_flag(SHELLCODE_PATTERNS, text),
-        'obfuscation_detected': detect_flag(OBFUSCATION_PATTERNS, text),
-        'priv_esc_detected': detect_flag(PRIV_ESC_PATTERNS, text)
-    }
+1. Open a new **Google Colab** notebook
+2. Copy the Colab‑specific script from this repository
+3. Add your ngrok auth token in Colab secrets as:
 
-    return {
-        'score': score,
-        'label': label,
-        'details': details
-    }
+```
+NGROK_AUTH_TOKEN
+```
 
-# Example usage:
-# code = open("decompiled_output.c").read()
-# result = compute_severity(code, previous_score=10)
-# print(result)
+4. Run the notebook
 
-Notes and tuning
-----------------
-1) This rule-based approach is deterministic and interpretable, useful for
-   initial testing and UI display. For production use, consider training a
-   classifier (random forest, gradient-boosted trees, or neural model) on
-   labeled malicious/benign examples and use its probability as a severity score.
+You will receive a public endpoint like:
 
-2) Combine LLM interpretation (semantic understanding) with rule-based
-   features. For example, LLM may output "this code attempts to spawn a shell",
-   which you can map to a high-weight flag.
+```
+https://xxxx.ngrok.io/decompile
+```
 
-3) Adjust weights based on false positives and false negatives observed in
-   your dataset.
+This endpoint can be connected to your local or web frontend.
 
-4) When showing the score to users, always add context: show detected tags
-   (e.g., ["strcpy", "shellcode array", "fopen"]) so a human analyst can
-   quickly triage.
+---
 
-End of file.
+## ⚙️ Ghidra Decompilation Setup
+
+Update paths in `app.py`:
+
+```python
+GHIDRA_PATH = "/path/to/ghidra/support/analyzeHeadless"
+GHIDRA_SCRIPT = "ghidra/decompile.py"
+```
+
+Supported file types:
+
+* `.o`
+* `.asm`
+
+The output will be saved to:
+
+```
+Ghidra_decompiled/
+```
+
+---
+
+## 🔌 API Endpoints
+
+### LLM Decompile
+
+```
+POST /decompile
+```
+
+**Input:** multipart form with `file`
+
+**Output:**
+
+```json
+{
+  "decompiled_code": "..."
+}
+```
+
+---
+
+### Ghidra Decompile
+
+```
+POST /ghidra_decompile
+```
+
+**Input:** `.o` or `.asm` file
+
+**Output:** Decompiled C‑like code and logs
+
+---
+
+## 📊 Severity Scoring (Optional)
+
+Severity is calculated based on static heuristics such as:
+
+* Shellcode patterns
+* Function pointer execution
+* RWX memory behavior
+* Obfuscation indicators
+
+Severity range:
+
+* 0–30 → Low risk
+* 31–70 → Medium risk
+* 71–100 → High risk
+
+---
+
+## 🧹 Git Notes
+
+* Large Ghidra files are ignored via `.gitignore`
+* `LLM4Decompile` is included as a **Git submodule**
+
+---
+
+## 📚 References
+
+* LLM4Decompile: [https://github.com/albertan017/LLM4Decompile](https://github.com/albertan017/LLM4Decompile)
+* Ghidra: [https://ghidra-sre.org/](https://ghidra-sre.org/)
+
+---
+
+## 👤 Author
+
+Jaydeep (Chefjdeep)
+
+---
+
+## 📜 License
+
+This project is intended for **academic and research use only**.
+Refer to individual submodules for their respective licenses.
+
+---
+
+## Acknowledgements
+
+This project gratefully acknowledges the **LLM4Decompile** project for providing the foundational large language model used for binary-to-source decompilation.
+
+* **LLM4Decompile Repository**: [https://github.com/albertan017/LLM4Decompile](https://github.com/albertan017/LLM4Decompile)
+
+LLM4Decompile enables research into neural decompilation and significantly contributes to academic and practical exploration of machine-learning-assisted reverse engineering. This repository uses LLM4Decompile strictly for **educational and research purposes**.
