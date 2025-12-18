@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM4Decompile Web UI</title>
+    <style>
+      :root {
+        --bg: #1e1e1e;
+        --fg: #ddd;
+        --accent: #4caf50;
+        --panel: #2a2a2a;
+        --border: #333;
+      }
+
+      [data-theme="light"] {
+        --bg: #f5f5f5;
+        --fg: #222;
+        --accent: #2e7d32;
+        --panel: #ffffff;
+        --border: #ccc;
+      }
+
+      body {
+        font-family: "Courier New", Courier, monospace;
+        background: var(--bg);
+        color: var(--fg);
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: background 0.3s, color 0.3s;
+      }
+
+      header {
+        padding: 15px;
+        background: var(--panel);
+        text-align: center;
+        color: var(--accent);
+        font-size: 1.5rem;
+        font-weight: bold;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .theme-toggle {
+        background: none;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        padding: 6px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .upload-container {
+        text-align: center;
+        padding: 10px 0;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .drag-area {
+        border: 2px dashed var(--accent);
+        padding: 6px 12px;
+        border-radius: 6px;
+        margin: 8px auto;
+        width: 220px;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s;
+        font-size: 0.9rem;
+      }
+
+      .drag-area.dragover {
+        background: rgba(76, 175, 80, 0.1);
+        transform: scale(1.03);
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: bold;
+        margin-top: 8px;
+      }
+
+      .progress-container {
+        width: 260px;
+        height: 6px;
+        background-color: var(--border);
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 8px auto;
+        display: none;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: var(--accent);
+        transition: width 0.3s;
+      }
+
+      .content {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        height: calc(100vh - 160px);
+      }
+
+      .panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--border);
+      }
+
+      .panel:last-child {
+        border-right: none;
+      }
+
+      .panel-title {
+        background: var(--panel);
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .panel-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        background: var(--panel);
+        padding: 5px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      pre {
+        flex: 1;
+        margin: 0;
+        background: var(--bg);
+        padding: 10px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.4em;
+        font-size: 0.9rem;
+      }
+
+      footer {
+        text-align: center;
+        padding: 10px;
+        background: var(--panel);
+        border-top: 1px solid var(--border);
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      LLM4Decompile Web Interface
+      <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+    </header>
+
+    <div class="upload-container">
+      <form id="uploadForm">
+        <label id="dropArea" class="drag-area" for="asmFile">
+          📂 Click or Drag <b>.asm</b> file
+        </label>
+        <input type="file" id="asmFile" name="file" accept=".asm" required />
+        <br />
+        <button type="submit">Decompile</button>
+      </form>
+
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-title">Assembly Code</div>
+        <div class="panel-buttons">
+          <button onclick="copyText('asmOutput')">📋 Copy ASM</button>
+        </div>
+        <pre id="asmOutput">Upload a .asm file to see its contents here...</pre>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Decompiled C Code</div>
+        <div class="panel-buttons">
+          <button onclick="copyText('cOutput')">📋 Copy C Code</button>
+        </div>
+        <pre id="cOutput">Decompiled code will appear here...</pre>
+      </div>
+    </div>
+
+    <footer>B12 (Devdatt, Jaydeep, Vardhan) • © 2025</footer>
+
+    <script>
+      const form = document.getElementById("uploadForm");
+      const asmOutput = document.getElementById("asmOutput");
+      const cOutput = document.getElementById("cOutput");
+      const progressContainer = document.querySelector(".progress-container");
+      const progressBar = document.getElementById("progressBar");
+      const dropArea = document.getElementById("dropArea");
+      const fileInput = document.getElementById("asmFile");
+      const themeToggle = document.getElementById("themeToggle");
+
+      // Theme switcher
+      themeToggle.addEventListener("click", () => {
+        const currentTheme = document.body.getAttribute("data-theme");
+        if (currentTheme === "light") {
+          document.body.removeAttribute("data-theme");
+          themeToggle.textContent = "🌙 Dark";
+        } else {
+          document.body.setAttribute("data-theme", "light");
+          themeToggle.textContent = "🌞 Light";
+        }
+      });
+
+      function copyText(id) {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text);
+        alert("Copied!");
+      }
+
+      // Drag & drop handlers
+      dropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropArea.classList.add("dragover");
+      });
+
+      dropArea.addEventListener("dragleave", () => {
+        dropArea.classList.remove("dragover");
+      });
+
+      dropArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropArea.classList.remove("dragover");
+        fileInput.files = e.dataTransfer.files;
+        updateFileName();
+      });
+
+      fileInput.addEventListener("change", updateFileName);
+
+      function updateFileName() {
+        const file = fileInput.files[0];
+        dropArea.textContent = file
+          ? `✅ Uploaded: ${file.name}`
+          : "📂 Click or Drag .asm file";
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const asmText = await file.text();
+        asmOutput.textContent = asmText;
+
+        cOutput.textContent = "⏳ Decompiling... please wait.";
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+
+        let progress = 0;
+        const interval = setInterval(() => {
+          if (progress < 95) {
+            progress += Math.random() * 10;
+            progressBar.style.width = Math.min(progress, 95) + "%";
+          }
+        }, 300);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const res = await fetch("/decompile", { method: "POST", body: formData });
+          const data = await res.json();
+          clearInterval(interval);
+          progressBar.style.width = "100%";
+
+          if (data.decompiled_code) {
+            cOutput.textContent = data.decompiled_code;
+          } else {
+            cOutput.textContent = "❌ Error: " + (data.error || "Unknown error");
+          }
+        } catch (err) {
+          cOutput.textContent = "⚠️ Request failed: " + err.message;
+        } finally {
+          setTimeout(() => {
+            progressContainer.style.display = "none";
+          }, 1000);
+        }
+      });
+    </script>
+  </body>
+</html>

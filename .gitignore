@@ -1,0 +1,78 @@
+# =====================================
+# 🧠 B12 Project Git Ignore
+# =====================================
+
+# --- Ghidra Files & Workspaces ---
+*.ghidra
+*.rep
+*.zip
+*.tar
+*.tar.gz
+*.ghidra_state
+*.prp
+*.gpr
+*.gpf
+*.gzs
+*.gb
+*.idb
+*.bin
+*.exe
+*.dll
+*.so
+*.o
+*.obj
+
+# --- Build & Compiled Files ---
+*.out
+*.a
+*.class
+*.log
+*.tmp
+*.pyc
+*.pyo
+*.pyd
+*.dSYM/
+*.swp
+
+# --- Python Virtual Environment ---
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+__pycache__/
+
+# --- Colab & Jupyter ---
+.ipynb_checkpoints/
+*.ipynb
+*.json
+
+# --- System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Large Binary or Sample Data ---
+samples/*.o
+samples/*.bin
+samples/*.exe
+samples/*.ghidra
+samples/output/
+uploads/
+outputs/
+data/
+*.dat
+*.csv
+
+# --- Secrets & Credentials ---
+NGROK_AUTH_TOKEN.txt
+.env
+*.key
+*.pem
+*.crt
+
+# --- Cache ---
+.cache/
+logs/
+*.log

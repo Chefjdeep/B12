@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Machine Learning Aided Decompilation and Malicious Code Analysis</title>
+<style>
+:root {
+	--bg: #1e1e1e;
+	--fg: #ddd;
+	--accent: #4caf50;
+	--panel: #2a2a2a;
+	--border: #333;
+}
+
+[data-theme="light"] {
+	--bg: #f5f5f5;
+	--fg: #222;
+	--accent: #2e7d32;
+	--panel: #ffffff;
+	--border: #ccc;
+}
+
+body {
+	font-family: "Courier New", Courier, monospace;
+	background: var(--bg);
+	color: var(--fg);
+	margin: 0;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	transition: background 0.3s, color 0.3s;
+}
+
+header {
+	padding: 15px;
+	background: var(--panel);
+	text-align: center;
+	color: var(--accent);
+	font-size: 1.5rem;
+	font-weight: bold;
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 20px;
+}
+
+.theme-toggle {
+	background: none;
+	border: 1px solid var(--accent);
+	color: var(--accent);
+	padding: 6px 12px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.upload-container {
+	text-align: center;
+	padding: 10px 0;
+	background: var(--panel);
+	border-bottom: 1px solid var(--border);
+}
+
+.drag-area {
+	border: 2px dashed var(--accent);
+	padding: 6px 12px;
+	border-radius: 6px;
+	margin: 8px auto;
+	width: 220px;
+	cursor: pointer;
+	transition: background 0.3s, transform 0.2s;
+	font-size: 0.9rem;
+}
+
+.drag-area.dragover {
+	background: rgba(76, 175, 80, 0.1);
+	transform: scale(1.03);
+}
+
+input[type="file"] {
+	display: none;
+}
+
+button {
+	background: var(--accent);
+	color: white;
+	border: none;
+	padding: 8px 16px;
+	cursor: pointer;
+	border-radius: 5px;
+	font-weight: bold;
+	margin-top: 8px;
+}
+
+.progress-container {
+	width: 260px;
+	height: 6px;
+	background-color: var(--border);
+	border-radius: 5px;
+	overflow: hidden;
+	margin: 8px auto;
+	display: none;
+}
+
+.progress-bar {
+	height: 100%;
+	width: 0%;
+	background-color: var(--accent);
+	transition: width 0.3s;
+}
+
+.content {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.5px;
+	flex: 1;
+	height: calc(100vh - 210px);
+	overflow: hidden;
+}
+
+.panel {
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid var(--border);
+	overflow: hidden;
+	min-width: 0;
+}
+
+.panel:last-child {
+	border-right: none;
+}
+
+.panel-title {
+	background: var(--panel);
+	padding: 8px;
+	border-bottom: 1px solid var(--border);
+	font-weight: bold;
+	text-align: center;
+}
+
+.panel-buttons {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+	background: var(--panel);
+	padding: 5px;
+	border-bottom: 1px solid var(--border);
+}
+
+pre {
+	flex: 1;
+	margin: 0;
+	background: var(--bg);
+	padding: 10px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	line-height: 1.4em;
+	font-size: 0.9rem;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+footer {
+	text-align: center;
+	padding: 10px;
+	background: var(--panel);
+	border-top: 1px solid var(--border);
+	font-size: 0.9rem;
+}
+</style>
+</head>
+
+<body>
+<header>
+	Machine Learning Aided Decompilation
+	<button class="theme-toggle" id="themeToggle">Dark</button>
+</header>
+
+<div class="upload-container">
+	<form id="uploadForm">
+		<label id="dropArea" class="drag-area" for="asmFile">
+			📂 Click or Drag <b>.o / .asm</b> file
+		</label>
+		<input type="file" id="asmFile" name="file" accept=".o, .asm" required />
+		<br />
+		<button type="submit">🧠 Decompile (LLM)</button>
+		<button type="button" id="ghidraButton">⚙️ Decompile (Ghidra)</button>
+	</form>
+
+	<div class="progress-container">
+		<div class="progress-bar" id="progressBar"></div>
+	</div>
+</div>
+
+<!-- 🧭 Code Severity Indicator -->
+<div style="text-align:center; background:var(--panel); padding:10px; border-bottom:1px solid var(--border);">
+    <h3 style="margin:5px;">🧭 Code Severity</h3>
+    <canvas id="severityGauge" width="250" height="130"></canvas>
+    <div id="severityLabel" style="font-weight:bold; color:var(--accent);">Awaiting Analysis...</div>
+</div>
+
+<div class="content">
+	<div class="panel">
+		<div class="panel-title">Assembly / Object File</div>
+		<div class="panel-buttons">
+			<button onclick="copyText('asmOutput')">📋 Copy ASM</button>
+		</div>
+		<pre id="asmOutput">Upload a .o or .asm file to see its contents here...</pre>
+	</div>
+
+	<div class="panel">
+		<div class="panel-title">Decompiled C Code</div>
+		<div class="panel-buttons">
+			<button onclick="copyText('cOutput')">📋 Copy C Code</button>
+		</div>
+		<pre id="cOutput">Decompiled code will appear here...</pre>
+	</div>
+</div>
+
+<footer>B12 (Devdatt, Jaydeep, Vardhan) • © 2025</footer>
+
+<script>
+const form = document.getElementById("uploadForm");
+const fileInput = document.getElementById("asmFile");
+const asmOutput = document.getElementById("asmOutput");
+const cOutput = document.getElementById("cOutput");
+const progressContainer = document.querySelector(".progress-container");
+const progressBar = document.getElementById("progressBar");
+const dropArea = document.getElementById("dropArea");
+const ghidraButton = document.getElementById("ghidraButton");
+const themeToggle = document.getElementById("themeToggle");
+
+// 🌗 Theme Toggle
+themeToggle.addEventListener("click", () => {
+	const currentTheme = document.body.getAttribute("data-theme");
+	if (currentTheme === "light") {
+		document.body.removeAttribute("data-theme");
+		themeToggle.textContent = "Dark";
+	} else {
+		document.body.setAttribute("data-theme", "light");
+		themeToggle.textContent = "Light";
+	}
+});
+
+// 📋 Copy button
+function copyText(id) {
+	const text = document.getElementById(id).innerText;
+	navigator.clipboard.writeText(text);
+	alert("Copied!");
+}
+
+// 🧾 Drag & Drop behavior
+dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("dragover"); });
+dropArea.addEventListener("dragleave", () => dropArea.classList.remove("dragover"));
+dropArea.addEventListener("drop", e => {
+	e.preventDefault();
+	dropArea.classList.remove("dragover");
+	fileInput.files = e.dataTransfer.files;
+	updateFileName();
+});
+
+fileInput.addEventListener("change", updateFileName);
+function updateFileName() {
+	const file = fileInput.files[0];
+	dropArea.textContent = file ? `File: ${file.name}` : "📂 Click or Drag .o / .asm file";
+}
+
+// =============================================
+// 🧭 CODE SEVERITY SPEEDOMETER
+// =============================================
+const gaugeCanvas = document.getElementById("severityGauge");
+const gaugeCtx = gaugeCanvas.getContext("2d");
+const severityLabel = document.getElementById("severityLabel");
+
+function drawGauge(value) {
+	const ctx = gaugeCtx;
+	const centerX = gaugeCanvas.width / 2;
+	const centerY = gaugeCanvas.height - 10;
+	const radius = 80;
+	ctx.clearRect(0, 0, gaugeCanvas.width, gaugeCanvas.height);
+
+	// Background arc
+	ctx.beginPath();
+	ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI, false);
+	ctx.lineWidth = 15;
+	ctx.strokeStyle = "#333";
+	ctx.stroke();
+
+	// Gradient color
+	let grad = ctx.createLinearGradient(0, 0, gaugeCanvas.width, 0);
+	grad.addColorStop(0, "#4caf50");
+	grad.addColorStop(0.5, "#ffeb3b");
+	grad.addColorStop(1, "#f44336");
+
+	// Severity arc
+	const angle = Math.PI + (value / 100) * Math.PI;
+	ctx.beginPath();
+	ctx.arc(centerX, centerY, radius, Math.PI, angle, false);
+	ctx.strokeStyle = grad;
+	ctx.lineWidth = 15;
+	ctx.stroke();
+
+	// Needle
+	const needleLength = radius - 15;
+	ctx.beginPath();
+	ctx.moveTo(centerX, centerY);
+	ctx.lineTo(centerX + needleLength * Math.cos(angle), centerY + needleLength * Math.sin(angle));
+	ctx.strokeStyle = "#fff";
+	ctx.lineWidth = 3;
+	ctx.stroke();
+
+	// Center dot
+	ctx.beginPath();
+	ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+	ctx.fillStyle = "#fff";
+	ctx.fill();
+
+	// Label
+	let labelText = "";
+	let labelColor = "#4caf50";
+	if (value < 30) {
+		labelText = "SAFE";
+		labelColor = "#4caf50";
+	} else if (value < 70) {
+		labelText = "MEDIUM RISK";
+		labelColor = "#ffeb3b";
+	} else {
+		labelText = "HIGH RISK";
+		labelColor = "#f44336";
+	}
+
+	severityLabel.textContent = labelText + ` (${Math.round(value)}%)`;
+	severityLabel.style.color = labelColor;
+}
+
+// Default gauge
+drawGauge(0);
+
+// 🚀 Upload + Request Handler
+async function uploadAndRequest(endpoint) {
+	const file = fileInput.files[0];
+	if (!file) return alert("Please choose a file first!");
+
+	const asmText = await file.text();
+	asmOutput.textContent = asmText || "(Binary object file — cannot preview text)";
+	cOutput.textContent = "⏳ Processing...";
+	progressContainer.style.display = "block";
+	progressBar.style.width = "0%";
+	let progress = 0;
+	const interval = setInterval(() => {
+		if (progress < 95) {
+			progress += Math.random() * 10;
+			progressBar.style.width = Math.min(progress, 95) + "%";
+		}
+	}, 300);
+
+	const formData = new FormData();
+	formData.append("file", file);
+
+	try {
+		const res = await fetch(endpoint, { method: "POST", body: formData });
+		const data = await res.json();
+		clearInterval(interval);
+		progressBar.style.width = "100%";
+
+		if (data.decompiled_code) {
+			cOutput.textContent = data.decompiled_code;
+
+			// 🧠 Keyword-based severity scoring
+			const code = data.decompiled_code.toLowerCase();
+			let score = 0;
+			if (code.includes("malloc") || code.includes("strcpy") || code.includes("system")) score += 40;
+			if (code.includes("exec") || code.includes("shell")) score += 60;
+			if (code.includes("network") || code.includes("socket")) score += 30;
+			if (score > 100) score = 100;
+			drawGauge(score);
+
+		} else {
+			cOutput.textContent = "❌ Error: " + (data.error || "Unknown error");
+			drawGauge(0);
+		}
+	} catch (err) {
+		cOutput.textContent = "⚠️ Request failed: " + err.message;
+		drawGauge(0);
+	} finally {
+		setTimeout(() => { progressContainer.style.display = "none"; }, 1000);
+	}
+}
+
+// 🧠 LLM Decompile
+form.addEventListener("submit", e => {
+	e.preventDefault();
+	uploadAndRequest("/decompile");
+});
+
+// ⚙️ Ghidra Decompile
+ghidraButton.addEventListener("click", () => {
+	uploadAndRequest("/ghidra_decompile");
+});
+</script>
+</body>
+</html>
