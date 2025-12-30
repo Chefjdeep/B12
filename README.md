@@ -222,15 +222,19 @@ Severity range:
 ## 📚 References
 
 * LLM4Decompile: [https://github.com/albertan017/LLM4Decompile](https://github.com/albertan017/LLM4Decompile)
+@misc{tan2024llm4decompile,
+      title={LLM4Decompile: Decompiling Binary Code with Large Language Models}, 
+      author={Hanzhuo Tan and Qi Luo and Jing Li and Yuqun Zhang},
+      year={2024},
+      eprint={2403.05286},
+      archivePrefix={arXiv},
+      primaryClass={cs.PL}
+}
 * Ghidra: [https://ghidra-sre.org/](https://ghidra-sre.org/)
 
----
-
-## 👤 Author
-
-Jaydeep (Chefjdeep)
 
 ---
+
 
 ## 📜 License
 

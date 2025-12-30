@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>CyberDecomp | AI-Powered Reverse Engineering</title>
+		<title>DeMa-AI | AI-Powered Reverse Engineering</title>
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -1090,7 +1090,7 @@
 				content += `[SHA256] ${hashes.sha256}\n\n`;
 
 				content += `=== FILE ANALYSIS ===\n`;
-				content += `Entropy: ${analysis.entropy.toFixed(3)} bits/byte\n`;
+				content += `Entropy: ${analysis.entropy.toFixed(3)} bits/byte Measures randomness (useful for detecting packed/encrypted files)\n`;
 				content += `Null bytes: ${analysis.nullBytes} (${analysis.nullPercent}%)\n`;
 				content += `Printable ASCII: ${analysis.printablePercent}%\n`;
 				content += `High bytes (>127): ${analysis.highBytes} (${analysis.highPercent}%)\n`;
