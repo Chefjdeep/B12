@@ -1,34 +1,30 @@
 # B12 – Intelligent Decompilation and Malware Analysis using LLMs
 
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Flask](https://img.shields.io/badge/Flask-API-green.svg)](https://flask.palletsprojects.com/)
+[![Ghidra](https://img.shields.io/badge/Ghidra-Reverse_Engineering-orange.svg)](https://ghidra-sre.org/)
+[![LLM4Decompile](https://img.shields.io/badge/LLM4Decompile-AI_Decompilation-purple.svg)](https://github.com/albertan017/LLM4Decompile)
+[![Research Use](https://img.shields.io/badge/Use-Research-yellow.svg)](#disclaimer)
+
 This repository contains **B12**, a research‑oriented project that integrates **LLM‑based binary decompilation**, **Ghidra automation**, and a **Flask + ngrok API** for remote analysis. The system is designed for **educational and research purposes only**.
 
 ---
 
-## 📌 Project Overview
+## ⚠️ DISCLAIMER
 
-B12 combines:
+This project may include malware‑like code samples for testing and research.
 
-* **LLM4Decompile** (as a Git submodule) for ASM → C decompilation using large language models
-* **Ghidra headless decompiler** for classical binary analysis
-* **Flask API** backend
-* **ngrok** for exposing Colab‑hosted models to a local or web UI
-* Optional **severity scoring** logic for suspicious or malicious code patterns
-
-The project supports:
-
-* Uploading assembly or object files
-* LLM‑based decompilation
-* Ghidra‑based decompilation
-* Integration with a frontend UI
+DO NOT execute any generated or sample code on a live or production system. Use isolated VMs or sandbox environments only.
 
 ---
 
-## ⚠️ Disclaimer
+## 📊 Project Overview
 
-This project may include **malware‑like code samples** for testing and research.
-
-**DO NOT execute any generated or sample code on a live or production system.**
-Use isolated VMs or sandbox environments only.
+### Key Features:
+- **Dual Decompilation**: Compare AI vs traditional decompilation results
+- **Threat Analysis**: Automatic severity scoring for suspicious patterns
+- **Real-time Processing**: Live analysis with progress visualization
+- **Cross-Platform**: Works on Linux, macOS, and via Colab
 
 ---
 
@@ -36,217 +32,257 @@ Use isolated VMs or sandbox environments only.
 
 ```
 B12/
-├── app.py                     # Main Flask backend (LLM + Ghidra routes)
+├── app.py                     # Main Flask backend
+├── enhance.py                 # LLM enhancement module
 ├── templates/
-│   └── ghidra.html            # Optional web UI
-├── LLM4Decompile/             # Git submodule (LLM4Binary project)
-├── Ghidra_decompiled/         # Output directory (ignored in git)
-├── temp_saves/                # Temporary Ghidra workspace (ignored)
-├── requirements.txt           # Python dependencies (optional)
-├── .gitignore
-└── README.md
+│   ├── index.html            # Main web interface
+├── LLM4Decompile/            # Git submodule
+│   ├── ghidra/
+│   │   ├── decompile.py      # Ghidra automation script
+│   │   └── analyzeHeadless   # Ghidra headless wrapper
+├── Ghidra_decompiled/        # Ghidra output (gitignored)
+├── Enhanced_Decompiled/      # LLM-enhanced output (gitignored)
+├── temp_saves/               # Temporary workspaces (gitignored)
+├── requirements.txt          # Python dependencies
+├── README.md                 # This file
+└── .gitignore               # Git ignore rules
 ```
 
 ---
 
-## 🧩 Prerequisites
+## 🛠️ **Quick Start Guide**
 
-### System Requirements
+### **Option A: Local Setup (Recommended for Developers)**
 
-* Python **3.10+**
-* Linux or macOS (Apple Silicon supported)
-* At least **12–16 GB RAM** recommended
-* GPU recommended (CUDA or Apple MPS)
-
-### External Tools
-
-* **Java 17+** (required for Ghidra)
-* **Ghidra 11.x** (installed locally)
-
----
-
-## 🔗 Clone the Repository
-
+#### 1. Clone Repository
 ```bash
-git clone https://github.com/Chefjdeep/B12.git
+git clone --recursive https://github.com/Chefjdeep/B12.git
 cd B12
 ```
 
-Initialize the submodule:
-
+#### 2. Set Up Python Environment
 ```bash
-git submodule update --init --recursive
-```
-
----
-
-## 🐍 Python Environment Setup
-
-Create and activate a virtual environment:
-
-```bash
+# Create virtual environment
 python3 -m venv .venv
+
+# Activate (Linux/macOS)
 source .venv/bin/activate
+
+# Activate (Windows)
+.venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Install dependencies:
-
-```bash
-pip install torch transformers flask flask-cors pyngrok accelerate
-```
-
----
-
-## 🧠 Running the LLM Decompiler Locally
-
-Edit the model path if required:
-
+#### 3. Install Ghidra
+1. Download Ghidra from [ghidra-sre.org](https://ghidra-sre.org/)
+2. Extract to a known location
+3. Update paths in `app.py`:
 ```python
-MODEL_PATH = "LLM4Binary/llm4decompile-1.3b-v1.5"
+GHIDRA_PATH = "/path/to/ghidra_11.0.3_PUBLIC/support/analyzeHeadless"
+GHIDRA_SCRIPT = "LLM4Decompile/ghidra/decompile.py"
 ```
 
-Run the Flask server:
-
+#### 4. Run the Application
 ```bash
+# Start Flask server
 python app.py
+
+# Access at: http://localhost:5000
 ```
 
-The API will be available at:
+### **Option B: Google Colab Setup (Recommended for Research/Testing)**
 
+#### 1. Open Colab Notebook
+```python
+# Copy the Colab script from Colab_setup.ipynb
+# Or run the provided Colab notebook
 ```
-http://localhost:5000
+
+#### 2. Configure ngrok (Free tier)
+1. Sign up at [ngrok.com](https://ngrok.com/)
+2. Get your auth token
+3. Add to Colab secrets as `NGROK_AUTH_TOKEN`
+
+#### 3. Run the Cells
+Execute all cells to:
+- Install dependencies
+- Load LLM4Decompile model
+- Start Flask server
+- Create ngrok tunnel
+
+#### 4. Connect Your UI
+Use the provided ngrok URL in your frontend:
+```javascript
+// In your HTML frontend
+const COLAB_URL = "https://your-ngrok-url.ngrok-free.app/llm4decompile";
 ```
 
 ---
 
-## 🌍 Running on Google Colab with ngrok (Recommended)
+## 🔧 **Configuration**
 
-1. Open a new **Google Colab** notebook
-2. Copy the Colab‑specific script from this repository
-3. Add your ngrok auth token in Colab secrets as:
-
-```
-NGROK_AUTH_TOKEN
-```
-
-4. Run the notebook
-
-You will receive a public endpoint like:
-
-```
-https://xxxx.ngrok.io/decompile
-```
-
-This endpoint can be connected to your local or web frontend.
-
----
-
-## ⚙️ Ghidra Decompilation Setup
-
-Update paths in `app.py`:
+### **Key Configuration Variables (app.py)**
 
 ```python
-GHIDRA_PATH = "/path/to/ghidra/support/analyzeHeadless"
-GHIDRA_SCRIPT = "ghidra/decompile.py"
+
+# Enhancement Mode (Choose one)
+ENHANCEMENT_MODE = "colab"  # or "local"
+COLAB_NGROK_URL = "https://your-ngrok-url.ngrok-free.app/llm4decompile"
 ```
+---
 
-Supported file types:
+## 🌐 **API Endpoints**
 
-* `.o`
-* `.asm`
+### **Core Endpoints**
 
-The output will be saved to:
+| Endpoint | Method | Description | Input | Output |
+|----------|--------|-------------|-------|--------|
+| `/` | GET | Home/status page | None | JSON status |
+| `/decompile` | POST | LLM-only decompilation | File | Decompiled C code |
+| `/ghidra_decompile` | POST | Ghidra decompilation | .o/.asm file | Ghidra output |
+| `/ghidra_enhance` | POST | Ghidra + LLM enhancement | .o/.asm file | Enhanced output |
+| `/status` | GET | System status | None | JSON status |
 
-```
-Ghidra_decompiled/
+### **Example API Usage**
+
+```bash
+# Test LLM decompilation
+curl -X POST -F "file=@test.o" http://localhost:5000/decompile
+
+# Test Ghidra decompilation
+curl -X POST -F "file=@test.o" http://localhost:5000/ghidra_decompile
+
+# Test enhancement
+curl -X POST -F "file=@test.o" http://localhost:5000/ghidra_enhance
 ```
 
 ---
 
-## 🔌 API Endpoints
+## 📊 **Severity Scoring System**
 
-### LLM Decompile
+The system analyzes decompiled code for suspicious patterns:
 
-```
-POST /decompile
-```
+### **Risk Categories**
 
-**Input:** multipart form with `file`
+| Score | Level | Description |
+|-------|-------|-------------|
+| 0-30 | 🟢 Low | Benign code, standard functions |
+| 31-70 | 🟡 Medium | Suspicious patterns, review recommended |
+| 71-100 | 🔴 High | Malicious indicators, immediate review needed |
 
-**Output:**
-
-```json
-{
-  "decompiled_code": "..."
-}
-```
-
----
-
-### Ghidra Decompile
-
-```
-POST /ghidra_decompile
-```
-
-**Input:** `.o` or `.asm` file
-
-**Output:** Decompiled C‑like code and logs
+### **Detection Patterns**
+- **Shellcode indicators**: `exec`, `system`, `CreateProcess`
+- **Memory manipulation**: `VirtualAlloc`, `WriteProcessMemory`
+- **Network operations**: `socket`, `bind`, `connect`
+- **Obfuscation**: High entropy, packed code patterns
+- **Persistence**: Registry modifications, startup entries
 
 ---
 
-## 📊 Severity Scoring (Optional)
+## 🎯 **Supported File Formats**
 
-Severity is calculated based on static heuristics such as:
+### **Input Formats**
+- **Binary**: `.o`, `.obj`, `.bin`, `.elf`
+- **Assembly**: `.asm`, `.s`
+- **Object Files**: COFF, ELF, Mach-O
 
-* Shellcode patterns
-* Function pointer execution
-* RWX memory behavior
-* Obfuscation indicators
-
-Severity range:
-
-* 0–30 → Low risk
-* 31–70 → Medium risk
-* 71–100 → High risk
+### **Output Formats**
+- Decompiled C code
+- Severity analysis report
+- Hex dump (for binary files)
+- Threat radar visualization
 
 ---
 
-## 🧹 Git Notes
+## 🔒 **Security Best Practices**
 
-* Large Ghidra files are ignored via `.gitignore`
-* `LLM4Decompile` is included as a **Git submodule**
+1. **Isolation**: Always run in VM/sandbox (VMware, VirtualBox, Docker)
+2. **Network Isolation**: Disable internet access during analysis
+3. **Sample Sources**: Only analyze samples from trusted research repositories
+4. **Legal Compliance**: Ensure you have authorization to analyze binaries
+5. **Data Protection**: Don't upload sensitive/proprietary binaries
 
 ---
 
-## 📚 References
+## 🐛 **Troubleshooting**
 
-* LLM4Decompile: [https://github.com/albertan017/LLM4Decompile](https://github.com/albertan017/LLM4Decompile)
+### **Common Issues**
+
+1. **Ghidra not found**
+   ```bash
+   # Verify Java installation
+   java -version
+   
+   # Check Ghidra path
+   ls -la /path/to/ghidra/analyzeHeadless
+   ```
+
+2. **CUDA out of memory**
+   ```python
+   # Reduce batch size in app.py
+   max_new_tokens = 512  # instead of 2048
+   ```
+
+3. **ngrok connection issues**
+   ```bash
+   # Check ngrok status
+   ngrok http 5000
+   
+   # Verify firewall allows port 5000
+   ```
+
+### **Debug Mode**
+Enable debug logging in `app.py`:
+```python
+app.run(host="0.0.0.0", port=5000, debug=True)
+```
+
+## 📚 **References & Citations**
+
+### **Primary Research**
+```bibtex
 @misc{tan2024llm4decompile,
-      title={LLM4Decompile: Decompiling Binary Code with Large Language Models}, 
-      author={Hanzhuo Tan and Qi Luo and Jing Li and Yuqun Zhang},
-      year={2024},
-      eprint={2403.05286},
-      archivePrefix={arXiv},
-      primaryClass={cs.PL}
+  title={LLM4Decompile: Decompiling Binary Code with Large Language Models}, 
+  author={Hanzhuo Tan and Qi Luo and Jing Li and Yuqun Zhang},
+  year={2024},
+  eprint={2403.05286},
+  archivePrefix={arXiv},
+  primaryClass={cs.PL}
 }
-* Ghidra: [https://ghidra-sre.org/](https://ghidra-sre.org/)
+```
 
+### **Related Projects**
+- **Ghidra**: [https://ghidra-sre.org/](https://ghidra-sre.org/)
+- **LLM4Decompile**: [https://github.com/albertan017/LLM4Decompile](https://github.com/albertan017/LLM4Decompile)
+
+### **Learning Resources**
+- [Practical Binary Analysis](https://practicalbinaryanalysis.com/)
+- [The Ghidra Book](https://nostarch.com/ghidra)
+- [LLM Security Research Papers](https://arxiv.org/list/cs.CR/recent)
 
 ---
 
+## 📜 **License**
 
-## 📜 License
+This project is provided for **academic and research purposes only**.
 
-This project is intended for **academic and research use only**.
-Refer to individual submodules for their respective licenses.
+**Important**:
+- Check licenses of submodules (LLM4Decompile, Ghidra)
+- Respect software licenses of analyzed binaries
 
 ---
 
-## Acknowledgements
+## **Acknowledgements**
 
-This project gratefully acknowledges the **LLM4Decompile** project for providing the foundational large language model used for binary-to-source decompilation.
+This project gratefully acknowledges:
 
-* **LLM4Decompile Repository**: [https://github.com/albertan017/LLM4Decompile](https://github.com/albertan017/LLM4Decompile)
+- **LLM4Decompile Team**: For pioneering work in neural decompilation
+- **NSA Ghidra Team**: For the excellent reverse engineering framework
+- **Hugging Face**: For hosting the model weights
+- **ngrok**: For providing tunneling services
+- **Open Source Community**: For countless tools and libraries
 
-LLM4Decompile enables research into neural decompilation and significantly contributes to academic and practical exploration of machine-learning-assisted reverse engineering. This repository uses LLM4Decompile strictly for **educational and research purposes**.
+LLM4Decompile enables research into neural decompilation and significantly contributes to academic and practical exploration of machine-learning-assisted reverse engineering. This repository uses LLM4Decompile and Ghidra strictly for **educational and research purposes**.
+---
