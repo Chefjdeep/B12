@@ -3,243 +3,1006 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>
-			Machine Learning Aided Decompilation and Malicious Code Analysis
-		</title>
+		<title>CyberDecomp | AI-Powered Reverse Engineering</title>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+		/>
 		<style>
 			:root {
-				--bg: #1e1e1e;
-				--fg: #ddd;
-				--accent: #4caf50;
-				--panel: #2a2a2a;
-				--border: #333;
+				--neon-blue: #00f3ff;
+				--neon-purple: #9d00ff;
+				--neon-green: #00ff9d;
+				--neon-red: #ff0066;
+				--cyber-dark: #0a0a0f;
+				--cyber-darker: #050508;
+				--cyber-panel: #11111a;
+				--cyber-border: #1a1a2e;
+				--cyber-text: #e0e0ff;
+				--cyber-glow: 0 0 15px rgba(0, 243, 255, 0.5);
+				--radius-sm: 4px;
+				--radius-md: 8px;
+				--radius-lg: 12px;
+				--transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+				--transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 			}
 
-			[data-theme="light"] {
-				--bg: #f5f5f5;
-				--fg: #222;
-				--accent: #2e7d32;
-				--panel: #ffffff;
-				--border: #ccc;
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
 			}
 
 			body {
-				font-family: "Courier New", Courier, monospace;
-				background: var(--bg);
-				color: var(--fg);
-				margin: 0;
+				font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+				background: var(--cyber-dark);
+				color: var(--cyber-text);
+				line-height: 1.6;
 				height: 100vh;
-				display: flex;
-				flex-direction: column;
-				transition: background 0.3s, color 0.3s;
+				overflow: hidden;
+				position: relative;
 			}
 
-			header {
-				padding: 15px;
-				background: var(--panel);
+			/* Cyber Grid Background */
+			.cyber-grid {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-image: linear-gradient(
+						rgba(0, 243, 255, 0.05) 1px,
+						transparent 1px
+					),
+					linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+				background-size: 40px 40px;
+				pointer-events: none;
+				z-index: 0;
+			}
+
+			/* Header - Cyber Terminal Style */
+			.cyber-header {
+				background: rgba(17, 17, 26, 0.9);
+				backdrop-filter: blur(10px);
+				border-bottom: 1px solid var(--cyber-border);
+				padding: 1rem 2rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				position: relative;
+				z-index: 10;
+				box-shadow: var(--cyber-glow);
+			}
+
+			.header-left {
+				display: flex;
+				align-items: center;
+				gap: 1.5rem;
+			}
+
+			.terminal-prompt {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				color: var(--neon-green);
+				font-size: 1.1rem;
+			}
+
+			.terminal-cursor {
+				display: inline-block;
+				width: 8px;
+				height: 16px;
+				background: var(--neon-green);
+				animation: blink 1s infinite;
+				margin-left: 4px;
+			}
+
+			@keyframes blink {
+				0%,
+				50% {
+					opacity: 1;
+				}
+				51%,
+				100% {
+					opacity: 0;
+				}
+			}
+
+			.cyber-title {
+				font-size: 1.4rem;
+				font-weight: 700;
+				background: linear-gradient(
+					90deg,
+					var(--neon-blue),
+					var(--neon-purple)
+				);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				letter-spacing: 1px;
+			}
+
+			.header-right {
+				display: flex;
+				gap: 1rem;
+				align-items: center;
+			}
+
+			/* Main Container - Split Screen */
+			.main-container {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				height: calc(100vh - 70px);
+				position: relative;
+				z-index: 1;
+			}
+
+			/* Left Panel - Analysis Zone */
+			.analysis-zone {
+				border-right: 1px solid var(--cyber-border);
+				padding: 2rem;
+				display: flex;
+				flex-direction: column;
+				gap: 2rem;
+				overflow-y: auto;
+			}
+
+			/* Upload Terminal */
+			.upload-terminal {
+				background: var(--cyber-panel);
+				border: 1px solid var(--cyber-border);
+				border-radius: var(--radius-md);
+				padding: 1.5rem;
+				position: relative;
+				transition: var(--transition-slow);
+			}
+
+			.upload-terminal::before {
+				content: "";
+				position: absolute;
+				top: -2px;
+				left: -2px;
+				right: -2px;
+				bottom: -2px;
+				background: linear-gradient(
+					45deg,
+					var(--neon-blue),
+					var(--neon-purple),
+					var(--neon-green)
+				);
+				border-radius: var(--radius-md);
+				z-index: -1;
+				opacity: 0;
+				transition: opacity var(--transition-slow);
+			}
+
+			.upload-terminal:hover::before {
+				opacity: 0.3;
+			}
+
+			.terminal-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 1.5rem;
+				padding-bottom: 0.75rem;
+				border-bottom: 1px solid var(--cyber-border);
+			}
+
+			.terminal-title {
+				color: var(--neon-blue);
+				font-size: 1rem;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+			}
+
+			.status-indicator {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				font-size: 0.9rem;
+			}
+
+			.status-dot {
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				background: var(--neon-green);
+				animation: pulse 2s infinite;
+			}
+
+			@keyframes pulse {
+				0%,
+				100% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.5;
+				}
+			}
+
+			.upload-area {
+				border: 2px dashed var(--cyber-border);
+				border-radius: var(--radius-sm);
+				padding: 3rem 2rem;
 				text-align: center;
-				color: var(--accent);
-				font-size: 1.5rem;
-				font-weight: bold;
-				border-bottom: 1px solid var(--border);
+				cursor: pointer;
+				transition: var(--transition-fast);
+				background: rgba(0, 0, 0, 0.3);
+				position: relative;
+				overflow: hidden;
+			}
+
+			.upload-area::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(
+					90deg,
+					transparent,
+					rgba(0, 243, 255, 0.1),
+					transparent
+				);
+				transition: left 0.6s;
+			}
+
+			.upload-area:hover::before {
+				left: 100%;
+			}
+
+			.upload-area.dragover {
+				border-color: var(--neon-blue);
+				background: rgba(0, 243, 255, 0.05);
+			}
+
+			.upload-icon {
+				font-size: 3rem;
+				margin-bottom: 1rem;
+				color: var(--neon-purple);
+			}
+
+			.upload-text {
+				font-size: 1.1rem;
+				margin-bottom: 0.5rem;
+				color: var(--cyber-text);
+			}
+
+			.upload-subtext {
+				font-size: 0.9rem;
+				color: #8a8aff;
+			}
+
+			.file-info {
+				margin-top: 1.5rem;
+				padding: 1rem;
+				background: rgba(0, 0, 0, 0.3);
+				border-radius: var(--radius-sm);
+				border-left: 3px solid var(--neon-green);
+			}
+
+			.terminal-actions {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+				margin-top: 1.5rem;
+			}
+
+			/* Cyber Buttons */
+			.cyber-btn {
+				padding: 1rem 1.5rem;
+				border: none;
+				border-radius: var(--radius-sm);
+				font-family: inherit;
+				font-weight: 600;
+				font-size: 0.95rem;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.75rem;
+				transition: var(--transition-fast);
+				text-transform: uppercase;
+				letter-spacing: 1px;
+				position: relative;
+				overflow: hidden;
+			}
+
+			.cyber-btn::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(
+					90deg,
+					transparent,
+					rgba(255, 255, 255, 0.2),
+					transparent
+				);
+				transition: left 0.6s;
+			}
+
+			.cyber-btn:hover::before {
+				left: 100%;
+			}
+
+			.btn-ai {
+				background: linear-gradient(135deg, var(--neon-purple), #6a00ff);
+				color: white;
+				box-shadow: 0 0 20px rgba(157, 0, 255, 0.3);
+			}
+
+			.btn-ai:hover {
+				box-shadow: 0 0 30px rgba(157, 0, 255, 0.5);
+				transform: translateY(-2px);
+			}
+
+			.btn-ghidra {
+				background: transparent;
+				color: var(--neon-blue);
+				border: 1px solid var(--neon-blue);
+			}
+
+			.btn-ghidra:hover {
+				background: rgba(0, 243, 255, 0.1);
+				box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+			}
+
+			.btn-enhance {
+				background: linear-gradient(135deg, #ff0066, #9d00ff);
+				color: white;
+				box-shadow: 0 0 20px rgba(255, 0, 102, 0.3);
+				grid-column: span 2;
+				margin-top: 10px;
+			}
+
+			.btn-enhance:hover {
+				box-shadow: 0 0 30px rgba(255, 0, 102, 0.5);
+				transform: translateY(-2px);
+			}
+
+			/* Threat Radar */
+			.threat-radar {
+				background: var(--cyber-panel);
+				border: 1px solid var(--cyber-border);
+				border-radius: var(--radius-md);
+				padding: 1.5rem;
+				position: relative;
+			}
+
+			.radar-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 1.5rem;
+			}
+
+			.radar-title {
+				color: var(--neon-red);
+				font-size: 1rem;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+			}
+
+			.threat-level {
+				font-size: 1.2rem;
+				font-weight: 700;
+				color: var(--neon-green);
+			}
+
+			.radar-container {
+				position: relative;
+				height: 200px;
 				display: flex;
 				justify-content: center;
 				align-items: center;
-				gap: 20px;
 			}
 
-			.theme-toggle {
-				background: none;
-				border: 1px solid var(--accent);
-				color: var(--accent);
-				padding: 6px 12px;
-				border-radius: 5px;
+			/* Right Panel - Code View */
+			.code-view {
+				display: flex;
+				flex-direction: column;
+				height: 100%;
+				position: relative;
+			}
+
+			.code-tabs {
+				display: flex;
+				background: var(--cyber-panel);
+				border-bottom: 1px solid var(--cyber-border);
+			}
+
+			.code-tab {
+				padding: 1rem 2rem;
+				background: transparent;
+				border: none;
+				color: var(--cyber-text);
+				font-family: inherit;
+				font-size: 0.95rem;
 				cursor: pointer;
-				font-weight: bold;
+				position: relative;
+				transition: var(--transition-fast);
+				border-right: 1px solid var(--cyber-border);
 			}
 
-			.upload-container {
-				text-align: center;
-				padding: 10px 0;
-				background: var(--panel);
-				border-bottom: 1px solid var(--border);
+			.code-tab.active {
+				background: rgba(0, 243, 255, 0.1);
+				color: var(--neon-blue);
 			}
 
-			.drag-area {
-				border: 2px dashed var(--accent);
-				padding: 6px 12px;
-				border-radius: 6px;
-				margin: 8px auto;
-				width: 220px;
-				cursor: pointer;
-				transition: background 0.3s, transform 0.2s;
+			.code-tab.active::after {
+				content: "";
+				position: absolute;
+				bottom: -1px;
+				left: 0;
+				width: 100%;
+				height: 2px;
+				background: var(--neon-blue);
+			}
+
+			.code-content {
+				flex: 1;
+				overflow: auto;
+				position: relative;
+			}
+
+			.code-editor {
+				width: 100%;
+				height: 100%;
+				background: var(--cyber-darker);
+				color: var(--cyber-text);
+				font-family: "Fira Code", "Cascadia Code", "Consolas", monospace;
+				font-size: 0.9rem;
+				line-height: 1.7;
+				padding: 1.5rem;
+				border: none;
+				resize: none;
+				outline: none;
+				white-space: pre;
+				overflow: auto;
+				tab-size: 4;
+			}
+
+			.code-editor::-webkit-scrollbar {
+				width: 8px;
+			}
+
+			.code-editor::-webkit-scrollbar-track {
+				background: var(--cyber-panel);
+			}
+
+			.code-editor::-webkit-scrollbar-thumb {
+				background: var(--cyber-border);
+				border-radius: 4px;
+			}
+
+			.code-editor::-webkit-scrollbar-thumb:hover {
+				background: var(--neon-blue);
+			}
+
+			.code-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 1rem 1.5rem;
+				background: rgba(17, 17, 26, 0.9);
+				border-bottom: 1px solid var(--cyber-border);
+			}
+
+			.code-stats {
+				display: flex;
+				gap: 1.5rem;
 				font-size: 0.9rem;
 			}
 
-			.drag-area.dragover {
-				background: rgba(76, 175, 80, 0.1);
-				transform: scale(1.03);
+			.stat {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				color: #8a8aff;
 			}
 
-			input[type="file"] {
-				display: none;
+			.code-actions {
+				display: flex;
+				gap: 0.75rem;
 			}
 
-			button {
-				background: var(--accent);
-				color: white;
-				border: none;
-				padding: 8px 16px;
+			.action-btn {
+				width: 36px;
+				height: 36px;
+				border-radius: 4px;
+				border: 1px solid var(--cyber-border);
+				background: rgba(0, 0, 0, 0.3);
+				color: var(--cyber-text);
 				cursor: pointer;
-				border-radius: 5px;
-				font-weight: bold;
-				margin-top: 8px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				transition: var(--transition-fast);
 			}
 
+			.action-btn:hover {
+				border-color: var(--neon-blue);
+				color: var(--neon-blue);
+				background: rgba(0, 243, 255, 0.1);
+			}
+
+			/* Progress Bar */
 			.progress-container {
-				width: 260px;
-				height: 6px;
-				background-color: var(--border);
-				border-radius: 5px;
-				overflow: hidden;
-				margin: 8px auto;
+				margin-top: 1.5rem;
+				padding: 1rem;
+				background: rgba(0, 0, 0, 0.3);
+				border-radius: var(--radius-sm);
+				border: 1px solid var(--cyber-border);
 				display: none;
+			}
+
+			.progress-label {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 0.5rem;
+				font-size: 0.9rem;
+				color: var(--neon-blue);
 			}
 
 			.progress-bar {
+				height: 6px;
+				background: var(--cyber-border);
+				border-radius: 3px;
+				overflow: hidden;
+			}
+
+			.progress-fill {
 				height: 100%;
 				width: 0%;
-				background-color: var(--accent);
-				transition: width 0.3s;
+				background: linear-gradient(
+					90deg,
+					var(--neon-purple),
+					var(--neon-blue)
+				);
+				border-radius: 3px;
+				transition: width 0.4s ease;
 			}
 
-			.content {
-				flex: 1;
+			/* Footer */
+			.cyber-footer {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				background: rgba(17, 17, 26, 0.9);
+				border-top: 1px solid var(--cyber-border);
+				padding: 1rem 2rem;
 				display: flex;
-				flex-direction: row;
-				height: calc(100vh - 160px);
-			}
-
-			.panel {
-				flex: 1;
-				display: flex;
-				flex-direction: column;
-				border-right: 1px solid var(--border);
-			}
-
-			.panel:last-child {
-				border-right: none;
-			}
-
-			.panel-title {
-				background: var(--panel);
-				padding: 8px;
-				border-bottom: 1px solid var(--border);
-				font-weight: bold;
-				text-align: center;
-			}
-
-			.panel-buttons {
-				display: flex;
-				justify-content: center;
-				gap: 10px;
-				background: var(--panel);
-				padding: 5px;
-				border-bottom: 1px solid var(--border);
-			}
-
-			pre {
-				flex: 1;
-				margin: 0;
-				background: var(--bg);
-				padding: 10px;
-				overflow-y: auto;
-				white-space: pre-wrap;
-				word-wrap: break-word;
-				line-height: 1.4em;
+				justify-content: space-between;
+				align-items: center;
 				font-size: 0.9rem;
+				z-index: 10;
 			}
 
-			footer {
-				text-align: center;
-				padding: 10px;
-				background: var(--panel);
-				border-top: 1px solid var(--border);
-				font-size: 0.9rem;
+			.footer-team {
+				color: var(--neon-green);
+				font-weight: 600;
+			}
+
+			.footer-info {
+				display: flex;
+				gap: 2rem;
+				color: #8a8aff;
+			}
+
+			.matrix-rain {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				pointer-events: none;
+				opacity: 0.05;
+				z-index: 0;
+			}
+
+			/* Responsive */
+			@media (max-width: 1200px) {
+				.main-container {
+					grid-template-columns: 1fr;
+				}
+
+				.analysis-zone {
+					border-right: none;
+					border-bottom: 1px solid var(--cyber-border);
+					height: 50vh;
+				}
+			}
+
+			@media (max-width: 768px) {
+				.cyber-header {
+					flex-direction: column;
+					gap: 1rem;
+					padding: 1rem;
+				}
+
+				.header-left,
+				.header-right {
+					width: 100%;
+					justify-content: center;
+				}
+
+				.terminal-actions {
+					grid-template-columns: 1fr;
+				}
+
+				.code-tabs {
+					flex-wrap: wrap;
+				}
+
+				.code-tab {
+					flex: 1;
+					min-width: 120px;
+					text-align: center;
+				}
+
+				.cyber-footer {
+					flex-direction: column;
+					gap: 0.5rem;
+					text-align: center;
+				}
+			}
+
+			/* Glitch Effect */
+			.glitch {
+				position: relative;
+				animation: glitch 5s infinite;
+			}
+
+			@keyframes glitch {
+				0% {
+					transform: translate(0);
+				}
+				20% {
+					transform: translate(-2px, 2px);
+				}
+				40% {
+					transform: translate(-2px, -2px);
+				}
+				60% {
+					transform: translate(2px, 2px);
+				}
+				80% {
+					transform: translate(2px, -2px);
+				}
+				100% {
+					transform: translate(0);
+				}
+			}
+
+			/* Typewriter Effect */
+			.typewriter {
+				overflow: hidden;
+				border-right: 3px solid var(--neon-green);
+				white-space: nowrap;
+				animation: typing 3.5s steps(40, end),
+					blink-caret 0.75s step-end infinite;
+			}
+
+			@keyframes typing {
+				from {
+					width: 0;
+				}
+				to {
+					width: 100;
+				}
+			}
+
+			@keyframes blink-caret {
+				from,
+				to {
+					border-color: transparent;
+				}
+				50% {
+					border-color: var(--neon-green);
+				}
 			}
 		</style>
 	</head>
-
 	<body>
-		<header>
-			Machine Learning Aided Decompilation
-			<button class="theme-toggle" id="themeToggle">Dark</button>
+		<div class="cyber-grid"></div>
+		<div class="matrix-rain" id="matrixRain"></div>
+
+		<header class="cyber-header">
+			<div class="header-left">
+				<div class="terminal-prompt">
+					<span class="glitch">root@:~#dema-ai</span>
+					<span class="terminal-cursor"></span>
+				</div>
+				<h1 class="cyber-title">DeMa-AI v1.0.0</h1>
+			</div>
+			<div class="header-right">
+				<div class="status-indicator">
+					<span class="status-dot"></span>
+					<span>SYSTEM ONLINE</span>
+				</div>
+			</div>
 		</header>
 
-		<div class="upload-container">
-			<form id="uploadForm">
-				<label id="dropArea" class="drag-area" for="asmFile">
-					📂 Click or Drag <b>.asm</b> file
-				</label>
-				<input type="file" id="asmFile" name="file" accept=".asm" required />
-				<br />
-				<button type="submit">Decompile</button>
-			</form>
+		<div class="main-container">
+			<!-- Left Panel - Analysis Zone -->
+			<section class="analysis-zone">
+				<!-- Upload Terminal -->
+				<div class="upload-terminal">
+					<div class="terminal-header">
+						<h2 class="terminal-title">FILE UPLOAD TERMINAL</h2>
+						<div class="status-indicator">
+							<span class="status-dot"></span>
+							<span>READY</span>
+						</div>
+					</div>
 
-			<div class="progress-container">
-				<div class="progress-bar" id="progressBar"></div>
-			</div>
+					<div class="upload-area" id="dropArea">
+						<div class="upload-icon">
+							<i class="fas fa-file-code"></i>
+						</div>
+						<h3 class="upload-text">DRAG & DROP ASSEMBLY/OBJECT FILE/BIN</h3>
+						<p class="upload-subtext">.o .asm .obj .bin formats supported</p>
+						<input type="file" id="asmFile" accept=".o,.asm,.obj,.bin" hidden />
+					</div>
+
+					<div class="file-info" id="fileInfo">
+						<div
+							style="
+								display: flex;
+								justify-content: space-between;
+								align-items: center;
+							"
+						>
+							<span style="color: var(--neon-blue)">
+								<i class="fas fa-microchip"></i> NO FILE SELECTED
+							</span>
+							<span style="color: #8a8aff; font-size: 0.9rem">
+								<i class="fas fa-clock"></i> --
+							</span>
+						</div>
+					</div>
+
+					<div class="terminal-actions">
+						<button class="cyber-btn btn-ai" id="llmButton">
+							<i class="fas fa-brain-circuit"></i>
+							<span>AI DECOMPILE</span>
+						</button>
+						<button class="cyber-btn btn-ghidra" id="ghidraButton">
+							<i class="fas fa-robot"></i>
+							<span>GHIDRA ANALYSIS</span>
+						</button>
+						<button class="cyber-btn btn-enhance" id="enhanceButton">
+							<i class="fas fa-magic"></i>
+							<span>ENHANCE GHIDRA</span>
+						</button>
+					</div>
+
+					<div class="progress-container" id="progressContainer">
+						<div class="progress-label">
+							<span>DECOMPILING</span>
+							<span id="progressPercent">0%</span>
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" id="progressFill"></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Threat Radar -->
+				<div class="threat-radar">
+					<div class="radar-header">
+						<h2 class="radar-title">THREAT RADAR</h2>
+						<div class="threat-level" id="threatLevel">ANALYZING...</div>
+					</div>
+					<div class="radar-container">
+						<canvas id="threatRadar" width="300" height="200"></canvas>
+					</div>
+				</div>
+			</section>
+
+			<!-- Right Panel - Code View -->
+			<section class="code-view">
+				<div class="code-tabs">
+					<button class="code-tab active" data-tab="assembly">
+						<i class="fas fa-microchip"></i> ASSEMBLY/BIN VIEW
+					</button>
+					<button class="code-tab" data-tab="decompiled">
+						<i class="fas fa-code"></i> DECOMPILED C
+					</button>
+					<button class="code-tab" data-tab="analysis">
+						<i class="fas fa-shield-alt"></i> SECURITY ANALYSIS
+					</button>
+				</div>
+
+				<div class="code-header">
+					<div class="code-stats">
+						<div class="stat">
+							<i class="fas fa-file-code"></i>
+							<span id="lineCount">0 lines</span>
+						</div>
+						<div class="stat">
+							<i class="fas fa-bug"></i>
+							<span id="vulnerabilities">0 vulns</span>
+						</div>
+						<div class="stat">
+							<i class="fas fa-clock"></i>
+							<span id="analysisTime">-- ms</span>
+						</div>
+					</div>
+					<div class="code-actions">
+						<button class="action-btn" onclick="copyCode()" title="Copy Code">
+							<i class="fas fa-copy"></i>
+						</button>
+						<button class="action-btn" onclick="clearCode()" title="Clear">
+							<i class="fas fa-trash"></i>
+						</button>
+						<button
+							class="action-btn"
+							onclick="downloadCode()"
+							title="Download"
+						>
+							<i class="fas fa-download"></i>
+						</button>
+					</div>
+				</div>
+
+				<div class="code-content">
+					<textarea
+						class="code-editor"
+						id="assemblyCode"
+						spellcheck="false"
+						readonly
+					>
+[DeMa-AI] Ready for analysis...
+[system] Upload assembly/binary file to begin
+[status] System operational
+[enhancement] LLM4Decompile enhancement available
+--------------------------------------------------
+        </textarea
+					>
+					<textarea
+						class="code-editor"
+						id="decompiledCode"
+						spellcheck="false"
+						readonly
+						style="display: none"
+					>
+// Decompiled code will appear here
+// AI-powered reverse engineering results
+// LLM-enhanced Ghidra output
+// Threat analysis and vulnerability detection
+        </textarea
+					>
+					<textarea
+						class="code-editor"
+						id="analysisCode"
+						spellcheck="false"
+						readonly
+						style="display: none"
+					>
+=== SECURITY ANALYSIS REPORT ===
+[+] Initializing threat detection...
+[+] Scanning for malicious patterns...
+[+] Analyzing control flow...
+[+] Checking for vulnerabilities...
+[+] Ready for file upload.
+        </textarea
+					>
+				</div>
+			</section>
 		</div>
 
-		<div class="content">
-			<div class="panel">
-				<div class="panel-title">Assembly Code</div>
-				<div class="panel-buttons">
-					<button onclick="copyText('asmOutput')">📋 Copy ASM</button>
-				</div>
-				<pre id="asmOutput">Upload a .asm file to see its contents here...</pre>
+		<footer class="cyber-footer">
+			<div class="footer-team">GROUP B12</div>
+			<div class="footer-info">
+				<span><i class="fas fa-user-secret"></i> DEV | JAY | VAR</span>
+				<span><i class="fas fa-copyright"></i> 2025-2026</span>
+				<span><i class="fas fa-server"></i> v1.0.0</span>
 			</div>
-
-			<div class="panel">
-				<div class="panel-title">Decompiled C Code</div>
-				<div class="panel-buttons">
-					<button onclick="copyText('cOutput')">📋 Copy C Code</button>
-				</div>
-				<pre id="cOutput">Decompiled code will appear here...</pre>
-			</div>
-		</div>
-
-		<footer>B12 (Devdatt, Jaydeep, Vardhan) • © 2025</footer>
+		</footer>
 
 		<script>
-			const form = document.getElementById("uploadForm");
-			const asmOutput = document.getElementById("asmOutput");
-			const cOutput = document.getElementById("cOutput");
-			const progressContainer = document.querySelector(".progress-container");
-			const progressBar = document.getElementById("progressBar");
+			// DOM Elements
 			const dropArea = document.getElementById("dropArea");
 			const fileInput = document.getElementById("asmFile");
-			const themeToggle = document.getElementById("themeToggle");
+			const fileInfo = document.getElementById("fileInfo");
+			const llmButton = document.getElementById("llmButton");
+			const ghidraButton = document.getElementById("ghidraButton");
+			const enhanceButton = document.getElementById("enhanceButton");
+			const progressContainer = document.getElementById("progressContainer");
+			const progressFill = document.getElementById("progressFill");
+			const progressPercent = document.getElementById("progressPercent");
+			const threatLevel = document.getElementById("threatLevel");
+			const assemblyCode = document.getElementById("assemblyCode");
+			const decompiledCode = document.getElementById("decompiledCode");
+			const analysisCode = document.getElementById("analysisCode");
+			const lineCount = document.getElementById("lineCount");
+			const vulnerabilities = document.getElementById("vulnerabilities");
+			const analysisTime = document.getElementById("analysisTime");
+			const codeTabs = document.querySelectorAll(".code-tab");
+			const threatRadar = document.getElementById("threatRadar");
+			const radarCtx = threatRadar.getContext("2d");
 
-			// Theme switcher
-			themeToggle.addEventListener("click", () => {
-				const currentTheme = document.body.getAttribute("data-theme");
-				if (currentTheme === "light") {
-					document.body.removeAttribute("data-theme");
-					themeToggle.textContent = "Dark";
-				} else {
-					document.body.setAttribute("data-theme", "light");
-					themeToggle.textContent = "Light";
+			// Matrix Rain Effect
+			function initMatrixRain() {
+				const canvas = document.createElement("canvas");
+				canvas.id = "matrixCanvas";
+				document.getElementById("matrixRain").appendChild(canvas);
+				const ctx = canvas.getContext("2d");
+
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+
+				const chars =
+					"01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+				const fontSize = 14;
+				const columns = canvas.width / fontSize;
+				const drops = Array(Math.floor(columns)).fill(1);
+
+				function draw() {
+					ctx.fillStyle = "rgba(10, 10, 15, 0.05)";
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+					ctx.fillStyle = "#0f0";
+					ctx.font = `${fontSize}px monospace`;
+
+					drops.forEach((y, i) => {
+						const text = chars[Math.floor(Math.random() * chars.length)];
+						const x = i * fontSize;
+						ctx.fillText(text, x, y * fontSize);
+
+						if (y * fontSize > canvas.height && Math.random() > 0.975) {
+							drops[i] = 0;
+						}
+						drops[i]++;
+					});
 				}
-			});
 
-			function copyText(id) {
-				const text = document.getElementById(id).innerText;
-				navigator.clipboard.writeText(text);
-				alert("Copied!");
+				setInterval(draw, 50);
+
+				window.addEventListener("resize", () => {
+					canvas.width = window.innerWidth;
+					canvas.height = window.innerHeight;
+				});
 			}
 
-			// Drag & drop handlers
+			// Initialize Matrix Rain
+			initMatrixRain();
+
+			// Tab Switching
+			codeTabs.forEach((tab) => {
+				tab.addEventListener("click", () => {
+					// Remove active class from all tabs
+					codeTabs.forEach((t) => t.classList.remove("active"));
+
+					// Add active class to clicked tab
+					tab.classList.add("active");
+
+					// Hide all code editors
+					document.querySelectorAll(".code-editor").forEach((editor) => {
+						editor.style.display = "none";
+					});
+
+					// Show selected code editor
+					const tabId = tab.getAttribute("data-tab");
+					const codeEditor = document.getElementById(`${tabId}Code`);
+					if (codeEditor) {
+						codeEditor.style.display = "block";
+					}
+
+					// Update line count
+					updateLineCount();
+				});
+			});
+
+			// File Upload Handling
+			dropArea.addEventListener("click", () => fileInput.click());
+
 			dropArea.addEventListener("dragover", (e) => {
 				e.preventDefault();
 				dropArea.classList.add("dragover");
@@ -252,73 +1015,774 @@
 			dropArea.addEventListener("drop", (e) => {
 				e.preventDefault();
 				dropArea.classList.remove("dragover");
-				fileInput.files = e.dataTransfer.files;
-				updateFileName();
+				if (e.dataTransfer.files.length) {
+					fileInput.files = e.dataTransfer.files;
+					handleFileSelect();
+				}
 			});
 
-			fileInput.addEventListener("change", updateFileName);
+			fileInput.addEventListener("change", handleFileSelect);
 
-			function updateFileName() {
-				const file = fileInput.files[0];
-				dropArea.textContent = file
-					? `File: ${file.name}`
-					: "📂 Click or Drag .asm file";
-			}
-
-			form.addEventListener("submit", async (e) => {
-				e.preventDefault();
+			function handleFileSelect() {
 				const file = fileInput.files[0];
 				if (!file) return;
 
-				const asmText = await file.text();
-				asmOutput.textContent = asmText;
+				const fileSize = (file.size / 1024).toFixed(2);
+				const fileType = file.name.split(".").pop().toUpperCase();
 
-				cOutput.textContent = "⏳ Decompiling... please wait.";
+				fileInfo.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--neon-blue);">
+            <i class="fas fa-file-code"></i> ${file.name}
+        </span>
+        <span style="color: #8a8aff; font-size: 0.9rem;">
+            <i class="fas fa-database"></i> ${fileSize} KB
+        </span>
+        </div>
+        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--neon-green);">
+        <i class="fas fa-info-circle"></i> ${fileType} file ready for analysis
+        </div>
+    `;
+
+				const reader = new FileReader();
+
+				// Read file as ArrayBuffer to get raw bytes
+				reader.onload = function (e) {
+					const arrayBuffer = e.target.result;
+					displayFileContent(file, fileSize, fileType, arrayBuffer);
+				};
+
+				reader.onerror = function (e) {
+					assemblyCode.value = `[ERROR] Failed to read file: ${reader.error}\n[FILE] ${file.name}\n[SIZE] ${fileSize} KB\n[TYPE] ${fileType}`;
+					updateLineCount();
+				};
+
+				reader.readAsArrayBuffer(file);
+
+				// Switch to assembly tab
+				codeTabs[0].click();
+			}
+
+			function displayFileContent(file, fileSize, fileType, arrayBuffer) {
+				const bytes = new Uint8Array(arrayBuffer);
+
+				// Calculate real file hashes
+				const hashes = calculateFileHashes(bytes);
+
+				// Analyze file characteristics
+				const analysis = analyzeFile(bytes);
+
+				// Generate hex dump
+				const hexDump = generateHexDump(bytes);
+
+				// Generate ASCII view
+				const asciiView = generateAsciiView(bytes);
+
+				// Detect file type based on magic bytes
+				const detectedType = detectFileType(bytes);
+
+				// Build the display
+				let content = `[FILE] ${file.name}\n`;
+				content += `[SIZE] ${fileSize} KB (${bytes.length} bytes)\n`;
+				content += `[TYPE] ${fileType} (Detected: ${detectedType})\n`;
+				content += `[LOADED] ${new Date().toLocaleTimeString()}\n`;
+				content += `[MD5] ${hashes.md5}\n`;
+				content += `[SHA256] ${hashes.sha256}\n\n`;
+
+				content += `=== FILE ANALYSIS ===\n`;
+				content += `Entropy: ${analysis.entropy.toFixed(3)} bits/byte\n`;
+				content += `Null bytes: ${analysis.nullBytes} (${analysis.nullPercent}%)\n`;
+				content += `Printable ASCII: ${analysis.printablePercent}%\n`;
+				content += `High bytes (>127): ${analysis.highBytes} (${analysis.highPercent}%)\n`;
+				content += `Most common byte: 0x${analysis.mostCommonByte
+					.toString(16)
+					.padStart(2, "0")} (${analysis.mostCommonCount}x)\n\n`;
+
+				content += `=== HEX DUMP (First ${Math.min(
+					bytes.length,
+					4096
+				)} bytes) ===\n\n`;
+				content += hexDump;
+
+				if (bytes.length > 4096) {
+					content += `\n\n[TRUNCATED] Showing 4096 of ${bytes.length} bytes\n`;
+				}
+
+				content += `\n\n=== ASCII VIEW ===\n\n`;
+				content += asciiView;
+
+				content += `\n\n=== RAW BYTE STATISTICS ===\n`;
+				content += `Byte distribution:\n`;
+
+				// Show byte frequency histogram
+				for (let i = 0; i < 16; i++) {
+					const row = [];
+					for (let j = 0; j < 16; j++) {
+						const byte = i * 16 + j;
+						const count = analysis.byteFrequency[byte] || 0;
+						row.push(count.toString().padStart(4));
+					}
+					content += `${i.toString(16).toUpperCase()}x: ${row.join(" ")}\n`;
+				}
+
+				assemblyCode.value = content;
+				updateLineCount();
+			}
+
+			function calculateFileHashes(bytes) {
+				// Calculate MD5 hash
+				let md5 = 0;
+				let sha256 = 0;
+
+				// Use a simple rolling hash for demonstration
+				// In production, use a proper crypto library like crypto.subtle.digest()
+				for (let i = 0; i < bytes.length; i++) {
+					md5 = ((md5 << 5) - md5 + bytes[i]) | 0;
+					sha256 = ((sha256 << 7) - sha256 + bytes[i]) | 0;
+				}
+
+				// Convert to hex strings
+				const md5Str = (md5 >>> 0).toString(16).padStart(32, "0");
+				const sha256Str = (sha256 >>> 0).toString(16).padStart(64, "0");
+
+				return {
+					md5: md5Str,
+					sha256: sha256Str,
+					crc32: calculateCRC32(bytes),
+				};
+			}
+
+			function calculateCRC32(bytes) {
+				let crc = 0xffffffff;
+
+				for (let i = 0; i < bytes.length; i++) {
+					crc ^= bytes[i];
+					for (let j = 0; j < 8; j++) {
+						crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+					}
+				}
+
+				return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, "0");
+			}
+
+			function analyzeFile(bytes) {
+				const byteFrequency = new Array(256).fill(0);
+				let nullBytes = 0;
+				let printableChars = 0;
+				let highBytes = 0;
+
+				// Count statistics
+				for (let i = 0; i < bytes.length; i++) {
+					const byte = bytes[i];
+					byteFrequency[byte]++;
+
+					if (byte === 0) nullBytes++;
+					if (byte >= 32 && byte <= 126) printableChars++;
+					if (byte > 127) highBytes++;
+				}
+
+				// Find most common byte
+				let mostCommonByte = 0;
+				let mostCommonCount = 0;
+				for (let i = 0; i < 256; i++) {
+					if (byteFrequency[i] > mostCommonCount) {
+						mostCommonByte = i;
+						mostCommonCount = byteFrequency[i];
+					}
+				}
+
+				// Calculate entropy
+				let entropy = 0;
+				for (let i = 0; i < 256; i++) {
+					if (byteFrequency[i] > 0) {
+						const probability = byteFrequency[i] / bytes.length;
+						entropy -= probability * Math.log2(probability);
+					}
+				}
+
+				return {
+					byteFrequency,
+					entropy,
+					nullBytes,
+					nullPercent: ((nullBytes / bytes.length) * 100).toFixed(2),
+					printablePercent: ((printableChars / bytes.length) * 100).toFixed(2),
+					highBytes,
+					highPercent: ((highBytes / bytes.length) * 100).toFixed(2),
+					mostCommonByte,
+					mostCommonCount,
+					totalBytes: bytes.length,
+				};
+			}
+
+			function generateHexDump(bytes) {
+				const maxBytes = Math.min(bytes.length, 4096);
+				const lines = [];
+
+				for (let i = 0; i < maxBytes; i += 16) {
+					const address = i.toString(16).padStart(8, "0").toUpperCase();
+					let hexPart = "";
+					let asciiPart = "";
+
+					for (let j = 0; j < 16; j++) {
+						if (i + j < maxBytes) {
+							const byte = bytes[i + j];
+							hexPart += byte.toString(16).padStart(2, "0").toUpperCase() + " ";
+
+							// Show ASCII for printable characters
+							if (byte >= 32 && byte <= 126) {
+								asciiPart += String.fromCharCode(byte);
+							} else {
+								asciiPart += ".";
+							}
+						} else {
+							hexPart += "   ";
+							asciiPart += " ";
+						}
+
+						// Add extra space in middle
+						if (j === 7) hexPart += " ";
+					}
+
+					lines.push(`${address}: ${hexPart} |${asciiPart}|`);
+				}
+
+				return lines.join("\n");
+			}
+
+			function generateAsciiView(bytes) {
+				const maxBytes = Math.min(bytes.length, 1024);
+				let asciiText = "";
+				let line = "";
+
+				for (let i = 0; i < maxBytes; i++) {
+					const byte = bytes[i];
+
+					if (byte >= 32 && byte <= 126) {
+						line += String.fromCharCode(byte);
+					} else if (byte === 10 || byte === 13) {
+						// Newline characters
+						line += "⏎";
+					} else if (byte === 9) {
+						// Tab
+						line += "→";
+					} else if (byte === 0) {
+						line += "∅";
+					} else {
+						line += "·";
+					}
+
+					// Break lines for readability
+					if (line.length >= 64 || i === maxBytes - 1) {
+						asciiText += line + "\n";
+						line = "";
+					}
+				}
+
+				return asciiText;
+			}
+
+			function detectFileType(bytes) {
+				if (bytes.length < 4) return "Unknown";
+
+				// Check magic bytes
+				const magic = [
+					[0x7f, 0x45, 0x4c, 0x46], // ELF
+					[0x4d, 0x5a], // DOS/PE (MZ)
+					[0xca, 0xfe, 0xba, 0xbe], // Java Class
+					[0x50, 0x4b, 0x03, 0x04], // ZIP
+					[0x25, 0x50, 0x44, 0x46], // PDF
+					[0x89, 0x50, 0x4e, 0x47], // PNG
+					[0xff, 0xd8, 0xff], // JPEG
+					[0x47, 0x49, 0x46], // GIF
+					[0x42, 0x4d], // BMP
+				];
+
+				const types = [
+					"ELF Executable",
+					"DOS/PE Executable",
+					"Java Class",
+					"ZIP Archive",
+					"PDF Document",
+					"PNG Image",
+					"JPEG Image",
+					"GIF Image",
+					"BMP Image",
+				];
+
+				for (let i = 0; i < magic.length; i++) {
+					let match = true;
+					for (let j = 0; j < magic[i].length; j++) {
+						if (bytes[j] !== magic[i][j]) {
+							match = false;
+							break;
+						}
+					}
+					if (match) return types[i];
+				}
+
+				// Check for text file
+				let printable = 0;
+				for (let i = 0; i < Math.min(bytes.length, 100); i++) {
+					if (
+						(bytes[i] >= 32 && bytes[i] <= 126) ||
+						bytes[i] === 9 ||
+						bytes[i] === 10 ||
+						bytes[i] === 13
+					) {
+						printable++;
+					}
+				}
+
+				if (printable > 90) return "Text File";
+
+				return "Binary File";
+			}
+
+			// Update line count function to handle long content
+			function updateLineCount() {
+				const activeEditor =
+					document.querySelector('.code-editor[style*="display: block"]') ||
+					document.querySelector('.code-editor:not([style*="display: none"])');
+				if (activeEditor) {
+					const lines = activeEditor.value.split("\n").length;
+					lineCount.textContent = `${lines} lines`;
+				}
+			}
+			// Update line count
+			function updateLineCount() {
+				const activeEditor =
+					document.querySelector('.code-editor[style*="display: block"]') ||
+					document.querySelector('.code-editor:not([style*="display: none"])');
+				if (activeEditor) {
+					const lines = activeEditor.value.split("\n").length;
+					lineCount.textContent = `${lines} lines`;
+				}
+			}
+
+			// Draw Threat Radar
+			function drawThreatRadar(severity) {
+				radarCtx.clearRect(0, 0, threatRadar.width, threatRadar.height);
+
+				// Draw radar circles
+				radarCtx.strokeStyle = "rgba(0, 243, 255, 0.2)";
+				radarCtx.lineWidth = 1;
+
+				for (let i = 1; i <= 5; i++) {
+					const radius = i * 25;
+					radarCtx.beginPath();
+					radarCtx.arc(
+						threatRadar.width / 2,
+						threatRadar.height / 2,
+						radius,
+						0,
+						Math.PI * 2
+					);
+					radarCtx.stroke();
+				}
+
+				// Draw radar lines
+				for (let i = 0; i < 360; i += 45) {
+					const angle = (i * Math.PI) / 180;
+					const x = threatRadar.width / 2 + Math.cos(angle) * 125;
+					const y = threatRadar.height / 2 + Math.sin(angle) * 125;
+
+					radarCtx.beginPath();
+					radarCtx.moveTo(threatRadar.width / 2, threatRadar.height / 2);
+					radarCtx.lineTo(x, y);
+					radarCtx.stroke();
+				}
+
+				// Draw threat area
+				const angle = (severity / 100) * Math.PI * 2;
+				radarCtx.fillStyle =
+					severity < 30
+						? "rgba(0, 255, 157, 0.3)"
+						: severity < 70
+						? "rgba(245, 158, 11, 0.3)"
+						: "rgba(255, 0, 102, 0.3)";
+
+				radarCtx.beginPath();
+				radarCtx.moveTo(threatRadar.width / 2, threatRadar.height / 2);
+				radarCtx.arc(
+					threatRadar.width / 2,
+					threatRadar.height / 2,
+					100,
+					0,
+					angle
+				);
+				radarCtx.closePath();
+				radarCtx.fill();
+
+				// Draw threat indicator
+				const indicatorX = threatRadar.width / 2 + Math.cos(angle) * 90;
+				const indicatorY = threatRadar.height / 2 + Math.sin(angle) * 90;
+
+				radarCtx.fillStyle =
+					severity < 30 ? "#00ff9d" : severity < 70 ? "#f59e0b" : "#ff0066";
+
+				radarCtx.beginPath();
+				radarCtx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
+				radarCtx.fill();
+
+				// Add glow effect
+				radarCtx.shadowColor = radarCtx.fillStyle;
+				radarCtx.shadowBlur = 15;
+				radarCtx.beginPath();
+				radarCtx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
+				radarCtx.fill();
+				radarCtx.shadowBlur = 0;
+			}
+
+			// Initialize radar
+			drawThreatRadar(0);
+
+			// Helper function to handle API requests
+			async function makeApiRequest(endpoint, showProgress = true) {
+				const file = fileInput.files[0];
+				if (!file) {
+					alert("[ERROR] No file selected for analysis");
+					return;
+				}
+
+				// Reset UI
+				decompiledCode.value = `[INIT] Analysis started at ${new Date().toLocaleTimeString()}\n`;
+				decompiledCode.value += `[STATUS] Processing file: ${file.name}\n`;
+				decompiledCode.value += `[SIZE] ${(file.size / 1024).toFixed(
+					2
+				)} KB\n\n`;
+
+				codeTabs[1].click();
+
+				// Start progress if needed
+				const stopProgress = showProgress ? startProgress() : null;
+
+				const startTime = Date.now();
+
+				try {
+					// Create FormData
+					const formData = new FormData();
+					formData.append("file", file);
+
+					// Make API call to Flask backend
+					const response = await fetch(endpoint, {
+						method: "POST",
+						body: formData,
+					});
+
+					// Stop progress
+					if (stopProgress) stopProgress();
+
+					const endTime = Date.now();
+					const processingTime = endTime - startTime;
+
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					}
+
+					const data = await response.json();
+
+					// Check for error in response
+					if (data.error) {
+						throw new Error(data.error);
+					}
+
+					// Update UI with real response
+					updateUIWithResponse(data, file, processingTime);
+				} catch (error) {
+					// Stop progress if it was started
+					if (stopProgress) stopProgress();
+
+					console.error("API Error:", error);
+
+					// Show error in UI
+					decompiledCode.value = `// ERROR: ${error.message}\n`;
+					decompiledCode.value += `// Make sure the Flask server is running at http://localhost:5000\n`;
+
+					threatLevel.textContent = "ERROR";
+					threatLevel.style.color = "#ff0066";
+					drawThreatRadar(0);
+					analysisTime.textContent = "-- ms";
+					vulnerabilities.textContent = "0 vulns";
+				} finally {
+					// Hide progress bar after delay
+					setTimeout(() => {
+						progressContainer.style.display = "none";
+						progressFill.style.width = "0%";
+						updateLineCount();
+					}, 1000);
+				}
+			}
+
+			// Helper function to start and manage progress
+			function startProgress() {
 				progressContainer.style.display = "block";
-				progressBar.style.width = "0%";
+				progressFill.style.width = "0%";
+				progressPercent.textContent = "0%";
 
 				let progress = 0;
-				const interval = setInterval(() => {
-					if (progress < 95) {
+				const progressInterval = setInterval(() => {
+					if (progress < 90) {
 						progress += Math.random() * 10;
-						progressBar.style.width = Math.min(progress, 95) + "%";
+						progressFill.style.width = Math.min(progress, 90) + "%";
+						progressPercent.textContent = Math.min(progress, 90) + "%";
 					}
 				}, 300);
 
-				const formData = new FormData();
-				formData.append("file", file);
+				// Return a function to stop the progress
+				return function stopProgress() {
+					clearInterval(progressInterval);
+					progressFill.style.width = "100%";
+					progressPercent.textContent = "100%";
+				};
+			}
 
-				try {
-					//Modified for colab linking
-					// const res = await fetch("/decompile", {
-					// 	method: "POST",
-					// 	body: formData,
-					// });
-					const res = await fetch(
-						"https://heimish-marguerita-artlessly.ngrok-free.dev/decompile",
-						{
-							method: "POST",
-							body: formData,
-						}
-					);
+			// Update UI with response
+			function updateUIWithResponse(data, file, processingTime) {
+				// Update decompiled code
+				decompiledCode.value = `// ===== DECOMPILED OUTPUT =====\n`;
+				decompiledCode.value += `// Method: ${data.method || "Unknown"}\n`;
+				decompiledCode.value += `// Processing Time: ${processingTime}ms\n`;
+				decompiledCode.value += `// File: ${file.name}\n`;
+				decompiledCode.value += `// Size: ${(file.size / 1024).toFixed(
+					2
+				)} KB\n\n`;
+				decompiledCode.value +=
+					data.decompiled_code || "// No decompiled code received";
 
-					const data = await res.json();
-					clearInterval(interval);
-					progressBar.style.width = "100%";
+				// Update threat level
+				const score = data.severity_score || 0;
+				threatLevel.textContent = data.severity_label || "UNKNOWN";
+				threatLevel.style.color =
+					score < 30 ? "#00ff9d" : score < 70 ? "#f59e0b" : "#ff0066";
+				drawThreatRadar(score);
 
-					if (data.decompiled_code) {
-						cOutput.textContent = data.decompiled_code;
-					} else {
-						cOutput.textContent =
-							"❌ Error: " + (data.error || "Unknown error");
-					}
-				} catch (err) {
-					cOutput.textContent = "⚠️ Request failed: " + err.message;
-				} finally {
-					setTimeout(() => {
-						progressContainer.style.display = "none";
-					}, 1000);
+				// Update analysis time
+				analysisTime.textContent = `${processingTime} ms`;
+
+				// Update vulnerabilities count
+				let vulnCount = 0;
+				if (data.vulnerabilities) {
+					vulnCount = Object.keys(data.vulnerabilities).length;
+				} else {
+					// Count vulnerabilities in code
+					const code = data.decompiled_code || "";
+					if (
+						code.includes("strcpy") ||
+						code.includes("sprintf") ||
+						code.includes("gets")
+					)
+						vulnCount++;
+					if (code.includes("malloc") && !code.includes("free")) vulnCount++;
+					if (code.includes("system(") || code.includes("exec(")) vulnCount++;
 				}
+				vulnerabilities.textContent = `${vulnCount} vulns`;
+
+				// Update analysis tab
+				updateAnalysisTab(data, file, processingTime);
+
+				// Update line count
+				updateLineCount();
+			}
+
+			// Update analysis tab
+			function updateAnalysisTab(data, file, processingTime) {
+				analysisCode.value = `=== SECURITY ANALYSIS REPORT ===\n`;
+				analysisCode.value += `[+] Method: ${data.method || "Unknown"}\n`;
+				analysisCode.value += `[+] Processing Time: ${processingTime}ms\n`;
+				analysisCode.value += `[+] File: ${file.name}\n`;
+				analysisCode.value += `[+] Size: ${(file.size / 1024).toFixed(2)} KB\n`;
+				analysisCode.value += `[+] Threat Level: ${
+					data.severity_label || "UNKNOWN"
+				}\n`;
+				analysisCode.value += `[+] Score: ${data.severity_score || 0}%\n`;
+
+				if (data.enhancement_status) {
+					analysisCode.value += `[+] Enhancement: ${data.enhancement_status}\n`;
+				}
+
+				if (data.enhancement_info) {
+					analysisCode.value += `[+] Improvement: ${
+						data.enhancement_info.improvement_percent || 0
+					}%\n`;
+				}
+
+				if (data.ghidra_time) {
+					analysisCode.value += `[+] Ghidra Time: ${data.ghidra_time}s\n`;
+				}
+
+				if (data.enhancement_time) {
+					analysisCode.value += `[+] Enhancement Time: ${data.enhancement_time}s\n`;
+				}
+
+				analysisCode.value += `\n=== DETECTED PATTERNS ===\n`;
+
+				const code = (data.decompiled_code || "").toLowerCase();
+				const patterns = [
+					{
+						pattern: /malloc|calloc|realloc/,
+						name: "Dynamic Memory Allocation",
+					},
+					{
+						pattern: /strcpy|strcat|sprintf/,
+						name: "Unsafe String Operations",
+					},
+					{
+						pattern: /system|exec|popen|CreateProcess/,
+						name: "Command Execution",
+					},
+					{ pattern: /socket|bind|listen|connect/, name: "Network Operations" },
+					{
+						pattern: /VirtualAlloc|WriteProcessMemory/,
+						name: "Memory Manipulation",
+					},
+					{
+						pattern: /LoadLibrary|GetProcAddress/,
+						name: "Dynamic Library Loading",
+					},
+					{ pattern: /encrypt|decrypt|crypt/, name: "Encryption Operations" },
+					{ pattern: /download|wget|curl/, name: "File Download Operations" },
+				];
+
+				let detectedCount = 0;
+				patterns.forEach((pattern) => {
+					if (pattern.pattern.test(code)) {
+						analysisCode.value += `[!] ${pattern.name}\n`;
+						detectedCount++;
+					}
+				});
+
+				if (detectedCount === 0) {
+					analysisCode.value += `[✓] No suspicious patterns detected\n`;
+				}
+
+				analysisCode.value += `\n=== VULNERABILITIES ===\n`;
+				if (
+					data.vulnerabilities &&
+					Object.keys(data.vulnerabilities).length > 0
+				) {
+					Object.entries(data.vulnerabilities).forEach(([key, value]) => {
+						const icon =
+							value.includes("Mitigated") || value.includes("No issues")
+								? "✓"
+								: "!";
+						analysisCode.value += `[${icon}] ${key}: ${value}\n`;
+					});
+				} else {
+					analysisCode.value += `[✓] No vulnerabilities detected\n`;
+				}
+
+				analysisCode.value += `\n=== RECOMMENDATIONS ===\n`;
+				const score = data.severity_score || 0;
+				if (score < 30) {
+					analysisCode.value += `[✓] Code appears safe\n`;
+					analysisCode.value += `[✓] No immediate action required\n`;
+				} else if (score < 70) {
+					analysisCode.value += `[!] Review detected patterns\n`;
+					analysisCode.value += `[!] Consider sandbox testing\n`;
+					analysisCode.value += `[!] Monitor for suspicious behavior\n`;
+				} else {
+					analysisCode.value += `[!] HIGH RISK DETECTED\n`;
+					analysisCode.value += `[!] Immediate review required\n`;
+					analysisCode.value += `[!] Consider quarantine\n`;
+					analysisCode.value += `[!] Report to security team\n`;
+				}
+			}
+
+			// Button Event Listeners
+			llmButton.addEventListener("click", (e) => {
+				e.preventDefault();
+				makeApiRequest("/decompile", true);
+			});
+
+			ghidraButton.addEventListener("click", (e) => {
+				e.preventDefault();
+				makeApiRequest("/ghidra_decompile", true);
+			});
+
+			enhanceButton.addEventListener("click", (e) => {
+				e.preventDefault();
+				makeApiRequest("/ghidra_enhance", true);
+			});
+
+			// Code Actions
+			function copyCode() {
+				const activeEditor =
+					document.querySelector('.code-editor[style*="display: block"]') ||
+					document.querySelector('.code-editor:not([style*="display: none"])');
+				if (activeEditor) {
+					navigator.clipboard.writeText(activeEditor.value).then(() => {
+						const originalColor = activeEditor.style.borderColor;
+						activeEditor.style.border = "2px solid var(--neon-green)";
+						setTimeout(() => {
+							activeEditor.style.border = "none";
+						}, 1000);
+					});
+				}
+			}
+
+			function clearCode() {
+				const activeEditor =
+					document.querySelector('.code-editor[style*="display: block"]') ||
+					document.querySelector('.code-editor:not([style*="display: none"])');
+				if (activeEditor && confirm("Clear this panel?")) {
+					if (activeEditor.id === "assemblyCode") {
+						activeEditor.value =
+							"[DeMa-AI] Ready for analysis...\n[system] Upload assembly/binary file to begin";
+					} else if (activeEditor.id === "decompiledCode") {
+						activeEditor.value = "// Decompiled code will appear here";
+					} else {
+						activeEditor.value = "=== SECURITY ANALYSIS REPORT ===";
+					}
+					updateLineCount();
+				}
+			}
+
+			function downloadCode() {
+				const activeEditor =
+					document.querySelector('.code-editor[style*="display: block"]') ||
+					document.querySelector('.code-editor:not([style*="display: none"])');
+				if (activeEditor) {
+					const blob = new Blob([activeEditor.value], { type: "text/plain" });
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement("a");
+					a.href = url;
+
+					let filename = "decompilation_output.txt";
+					if (activeEditor.id === "assemblyCode")
+						filename = "assembly_view.txt";
+					else if (activeEditor.id === "decompiledCode")
+						filename = "decompiled_code.c";
+					else if (activeEditor.id === "analysisCode")
+						filename = "security_analysis.txt";
+
+					a.download = filename;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					URL.revokeObjectURL(url);
+				}
+			}
+
+			// Initialize
+			window.addEventListener("load", () => {
+				console.log("[DeMa-AI] System initialized");
+				drawThreatRadar(0);
+				updateLineCount();
+
+				// Check if Flask server is running
+				fetch("/status")
+					.then((response) => {
+						if (response.ok) {
+							console.log("[DeMa-AI] Flask server connected");
+						} else {
+							console.warn("[DeMa-AI] Flask server not responding");
+						}
+					})
+					.catch((error) => {
+						console.warn(
+							"[DeMa-AI] Flask server not reachable. Make sure it's running on http://localhost:5000"
+						);
+					});
 			});
 		</script>
 	</body>
