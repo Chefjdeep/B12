@@ -280,9 +280,10 @@ This project gratefully acknowledges:
 
 - **LLM4Decompile Team**: For pioneering work in neural decompilation
 - **NSA Ghidra Team**: For the excellent reverse engineering framework
+- LLM4Decompile enables research into neural decompilation and significantly contributes to academic  and practical exploration of machine-learning-assisted reverse engineering. This repository uses LLM4Decompile and Ghidra strictly for **educational and research purposes**.
 - **Hugging Face**: For hosting the model weights
 - **ngrok**: For providing tunneling services
 - **Open Source Community**: For countless tools and libraries
 
-LLM4Decompile enables research into neural decompilation and significantly contributes to academic and practical exploration of machine-learning-assisted reverse engineering. This repository uses LLM4Decompile and Ghidra strictly for **educational and research purposes**.
+
 ---
