@@ -1,5 +1,5 @@
-// // High-risk simulated code sample (for LLM4Decompile testing)
-// // ⚠️ DO NOT EXECUTE ON A LIVE SYSTEM — educational use only
+// // // High-risk simulated code sample (for LLM4Decompile testing)
+// // // ⚠️ DO NOT EXECUTE ON A LIVE SYSTEM — educational use only
 
 // #include <stdio.h>
 // #include <string.h>

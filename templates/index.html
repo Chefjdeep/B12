@@ -907,883 +907,908 @@
 		</footer>
 
 		<script>
-			// DOM Elements
-			const dropArea = document.getElementById("dropArea");
-			const fileInput = document.getElementById("asmFile");
-			const fileInfo = document.getElementById("fileInfo");
-			const llmButton = document.getElementById("llmButton");
-			const ghidraButton = document.getElementById("ghidraButton");
-			const enhanceButton = document.getElementById("enhanceButton");
-			const progressContainer = document.getElementById("progressContainer");
-			const progressFill = document.getElementById("progressFill");
-			const progressPercent = document.getElementById("progressPercent");
-			const threatLevel = document.getElementById("threatLevel");
-			const assemblyCode = document.getElementById("assemblyCode");
-			const decompiledCode = document.getElementById("decompiledCode");
-			const analysisCode = document.getElementById("analysisCode");
-			const lineCount = document.getElementById("lineCount");
-			const vulnerabilities = document.getElementById("vulnerabilities");
-			const analysisTime = document.getElementById("analysisTime");
-			const codeTabs = document.querySelectorAll(".code-tab");
-			const threatRadar = document.getElementById("threatRadar");
-			const radarCtx = threatRadar.getContext("2d");
+						// DOM Elements
+						const dropArea = document.getElementById("dropArea");
+						const fileInput = document.getElementById("asmFile");
+						const fileInfo = document.getElementById("fileInfo");
+						const llmButton = document.getElementById("llmButton");
+						const ghidraButton = document.getElementById("ghidraButton");
+						const enhanceButton = document.getElementById("enhanceButton");
+						const progressContainer = document.getElementById("progressContainer");
+						const progressFill = document.getElementById("progressFill");
+						const progressPercent = document.getElementById("progressPercent");
+						const threatLevel = document.getElementById("threatLevel");
+						const assemblyCode = document.getElementById("assemblyCode");
+						const decompiledCode = document.getElementById("decompiledCode");
+						const analysisCode = document.getElementById("analysisCode");
+						const lineCount = document.getElementById("lineCount");
+						const vulnerabilities = document.getElementById("vulnerabilities");
+						const analysisTime = document.getElementById("analysisTime");
+						const codeTabs = document.querySelectorAll(".code-tab");
+						const threatRadar = document.getElementById("threatRadar");
+						const radarCtx = threatRadar.getContext("2d");
 
-			// Matrix Rain Effect
-			function initMatrixRain() {
-				const canvas = document.createElement("canvas");
-				canvas.id = "matrixCanvas";
-				document.getElementById("matrixRain").appendChild(canvas);
-				const ctx = canvas.getContext("2d");
+						// Matrix Rain Effect
+						function initMatrixRain() {
+							const canvas = document.createElement("canvas");
+							canvas.id = "matrixCanvas";
+							document.getElementById("matrixRain").appendChild(canvas);
+							const ctx = canvas.getContext("2d");
 
-				canvas.width = window.innerWidth;
-				canvas.height = window.innerHeight;
+							canvas.width = window.innerWidth;
+							canvas.height = window.innerHeight;
 
-				const chars =
-					"01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
-				const fontSize = 14;
-				const columns = canvas.width / fontSize;
-				const drops = Array(Math.floor(columns)).fill(1);
+							const chars =
+								"01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+							const fontSize = 14;
+							const columns = canvas.width / fontSize;
+							const drops = Array(Math.floor(columns)).fill(1);
 
-				function draw() {
-					ctx.fillStyle = "rgba(10, 10, 15, 0.05)";
-					ctx.fillRect(0, 0, canvas.width, canvas.height);
+							function draw() {
+								ctx.fillStyle = "rgba(10, 10, 15, 0.05)";
+								ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-					ctx.fillStyle = "#0f0";
-					ctx.font = `${fontSize}px monospace`;
+								ctx.fillStyle = "#0f0";
+								ctx.font = `${fontSize}px monospace`;
 
-					drops.forEach((y, i) => {
-						const text = chars[Math.floor(Math.random() * chars.length)];
-						const x = i * fontSize;
-						ctx.fillText(text, x, y * fontSize);
+								drops.forEach((y, i) => {
+									const text = chars[Math.floor(Math.random() * chars.length)];
+									const x = i * fontSize;
+									ctx.fillText(text, x, y * fontSize);
 
-						if (y * fontSize > canvas.height && Math.random() > 0.975) {
-							drops[i] = 0;
-						}
-						drops[i]++;
-					});
-				}
-
-				setInterval(draw, 50);
-
-				window.addEventListener("resize", () => {
-					canvas.width = window.innerWidth;
-					canvas.height = window.innerHeight;
-				});
-			}
-
-			// Initialize Matrix Rain
-			initMatrixRain();
-
-			// Tab Switching
-			codeTabs.forEach((tab) => {
-				tab.addEventListener("click", () => {
-					// Remove active class from all tabs
-					codeTabs.forEach((t) => t.classList.remove("active"));
-
-					// Add active class to clicked tab
-					tab.classList.add("active");
-
-					// Hide all code editors
-					document.querySelectorAll(".code-editor").forEach((editor) => {
-						editor.style.display = "none";
-					});
-
-					// Show selected code editor
-					const tabId = tab.getAttribute("data-tab");
-					const codeEditor = document.getElementById(`${tabId}Code`);
-					if (codeEditor) {
-						codeEditor.style.display = "block";
-					}
-
-					// Update line count
-					updateLineCount();
-				});
-			});
-
-			// File Upload Handling
-			dropArea.addEventListener("click", () => fileInput.click());
-
-			dropArea.addEventListener("dragover", (e) => {
-				e.preventDefault();
-				dropArea.classList.add("dragover");
-			});
-
-			dropArea.addEventListener("dragleave", () => {
-				dropArea.classList.remove("dragover");
-			});
-
-			dropArea.addEventListener("drop", (e) => {
-				e.preventDefault();
-				dropArea.classList.remove("dragover");
-				if (e.dataTransfer.files.length) {
-					fileInput.files = e.dataTransfer.files;
-					handleFileSelect();
-				}
-			});
-
-			fileInput.addEventListener("change", handleFileSelect);
-
-			function handleFileSelect() {
-				const file = fileInput.files[0];
-				if (!file) return;
-
-				const fileSize = (file.size / 1024).toFixed(2);
-				const fileType = file.name.split(".").pop().toUpperCase();
-
-				fileInfo.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="color: var(--neon-blue);">
-            <i class="fas fa-file-code"></i> ${file.name}
-        </span>
-        <span style="color: #8a8aff; font-size: 0.9rem;">
-            <i class="fas fa-database"></i> ${fileSize} KB
-        </span>
-        </div>
-        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--neon-green);">
-        <i class="fas fa-info-circle"></i> ${fileType} file ready for analysis
-        </div>
-    `;
-
-				const reader = new FileReader();
-
-				// Read file as ArrayBuffer to get raw bytes
-				reader.onload = function (e) {
-					const arrayBuffer = e.target.result;
-					displayFileContent(file, fileSize, fileType, arrayBuffer);
-				};
-
-				reader.onerror = function (e) {
-					assemblyCode.value = `[ERROR] Failed to read file: ${reader.error}\n[FILE] ${file.name}\n[SIZE] ${fileSize} KB\n[TYPE] ${fileType}`;
-					updateLineCount();
-				};
-
-				reader.readAsArrayBuffer(file);
-
-				// Switch to assembly tab
-				codeTabs[0].click();
-			}
-
-			function displayFileContent(file, fileSize, fileType, arrayBuffer) {
-				const bytes = new Uint8Array(arrayBuffer);
-
-				// Calculate real file hashes
-				const hashes = calculateFileHashes(bytes);
-
-				// Analyze file characteristics
-				const analysis = analyzeFile(bytes);
-
-				// Generate hex dump
-				const hexDump = generateHexDump(bytes);
-
-				// Generate ASCII view
-				const asciiView = generateAsciiView(bytes);
-
-				// Detect file type based on magic bytes
-				const detectedType = detectFileType(bytes);
-
-				// Build the display
-				let content = `[FILE] ${file.name}\n`;
-				content += `[SIZE] ${fileSize} KB (${bytes.length} bytes)\n`;
-				content += `[TYPE] ${fileType} (Detected: ${detectedType})\n`;
-				content += `[LOADED] ${new Date().toLocaleTimeString()}\n`;
-				content += `[MD5] ${hashes.md5}\n`;
-				content += `[SHA256] ${hashes.sha256}\n\n`;
-
-				content += `=== FILE ANALYSIS ===\n`;
-				content += `Entropy: ${analysis.entropy.toFixed(3)} bits/byte Measures randomness (useful for detecting packed/encrypted files)\n`;
-				content += `Null bytes: ${analysis.nullBytes} (${analysis.nullPercent}%)\n`;
-				content += `Printable ASCII: ${analysis.printablePercent}%\n`;
-				content += `High bytes (>127): ${analysis.highBytes} (${analysis.highPercent}%)\n`;
-				content += `Most common byte: 0x${analysis.mostCommonByte
-					.toString(16)
-					.padStart(2, "0")} (${analysis.mostCommonCount}x)\n\n`;
-
-				content += `=== HEX DUMP (First ${Math.min(
-					bytes.length,
-					4096
-				)} bytes) ===\n\n`;
-				content += hexDump;
-
-				if (bytes.length > 4096) {
-					content += `\n\n[TRUNCATED] Showing 4096 of ${bytes.length} bytes\n`;
-				}
-
-				content += `\n\n=== ASCII VIEW ===\n\n`;
-				content += asciiView;
-
-				content += `\n\n=== RAW BYTE STATISTICS ===\n`;
-				content += `Byte distribution:\n`;
-
-				// Show byte frequency histogram
-				for (let i = 0; i < 16; i++) {
-					const row = [];
-					for (let j = 0; j < 16; j++) {
-						const byte = i * 16 + j;
-						const count = analysis.byteFrequency[byte] || 0;
-						row.push(count.toString().padStart(4));
-					}
-					content += `${i.toString(16).toUpperCase()}x: ${row.join(" ")}\n`;
-				}
-
-				assemblyCode.value = content;
-				updateLineCount();
-			}
-
-			function calculateFileHashes(bytes) {
-				// Calculate MD5 hash
-				let md5 = 0;
-				let sha256 = 0;
-
-				// Use a simple rolling hash for demonstration
-				// In production, use a proper crypto library like crypto.subtle.digest()
-				for (let i = 0; i < bytes.length; i++) {
-					md5 = ((md5 << 5) - md5 + bytes[i]) | 0;
-					sha256 = ((sha256 << 7) - sha256 + bytes[i]) | 0;
-				}
-
-				// Convert to hex strings
-				const md5Str = (md5 >>> 0).toString(16).padStart(32, "0");
-				const sha256Str = (sha256 >>> 0).toString(16).padStart(64, "0");
-
-				return {
-					md5: md5Str,
-					sha256: sha256Str,
-					crc32: calculateCRC32(bytes),
-				};
-			}
-
-			function calculateCRC32(bytes) {
-				let crc = 0xffffffff;
-
-				for (let i = 0; i < bytes.length; i++) {
-					crc ^= bytes[i];
-					for (let j = 0; j < 8; j++) {
-						crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-					}
-				}
-
-				return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, "0");
-			}
-
-			function analyzeFile(bytes) {
-				const byteFrequency = new Array(256).fill(0);
-				let nullBytes = 0;
-				let printableChars = 0;
-				let highBytes = 0;
-
-				// Count statistics
-				for (let i = 0; i < bytes.length; i++) {
-					const byte = bytes[i];
-					byteFrequency[byte]++;
-
-					if (byte === 0) nullBytes++;
-					if (byte >= 32 && byte <= 126) printableChars++;
-					if (byte > 127) highBytes++;
-				}
-
-				// Find most common byte
-				let mostCommonByte = 0;
-				let mostCommonCount = 0;
-				for (let i = 0; i < 256; i++) {
-					if (byteFrequency[i] > mostCommonCount) {
-						mostCommonByte = i;
-						mostCommonCount = byteFrequency[i];
-					}
-				}
-
-				// Calculate entropy
-				let entropy = 0;
-				for (let i = 0; i < 256; i++) {
-					if (byteFrequency[i] > 0) {
-						const probability = byteFrequency[i] / bytes.length;
-						entropy -= probability * Math.log2(probability);
-					}
-				}
-
-				return {
-					byteFrequency,
-					entropy,
-					nullBytes,
-					nullPercent: ((nullBytes / bytes.length) * 100).toFixed(2),
-					printablePercent: ((printableChars / bytes.length) * 100).toFixed(2),
-					highBytes,
-					highPercent: ((highBytes / bytes.length) * 100).toFixed(2),
-					mostCommonByte,
-					mostCommonCount,
-					totalBytes: bytes.length,
-				};
-			}
-
-			function generateHexDump(bytes) {
-				const maxBytes = Math.min(bytes.length, 4096);
-				const lines = [];
-
-				for (let i = 0; i < maxBytes; i += 16) {
-					const address = i.toString(16).padStart(8, "0").toUpperCase();
-					let hexPart = "";
-					let asciiPart = "";
-
-					for (let j = 0; j < 16; j++) {
-						if (i + j < maxBytes) {
-							const byte = bytes[i + j];
-							hexPart += byte.toString(16).padStart(2, "0").toUpperCase() + " ";
-
-							// Show ASCII for printable characters
-							if (byte >= 32 && byte <= 126) {
-								asciiPart += String.fromCharCode(byte);
-							} else {
-								asciiPart += ".";
+									if (y * fontSize > canvas.height && Math.random() > 0.975) {
+										drops[i] = 0;
+									}
+									drops[i]++;
+								});
 							}
-						} else {
-							hexPart += "   ";
-							asciiPart += " ";
+
+							setInterval(draw, 50);
+
+							window.addEventListener("resize", () => {
+								canvas.width = window.innerWidth;
+								canvas.height = window.innerHeight;
+							});
 						}
 
-						// Add extra space in middle
-						if (j === 7) hexPart += " ";
-					}
+						// Initialize Matrix Rain
+						initMatrixRain();
 
-					lines.push(`${address}: ${hexPart} |${asciiPart}|`);
-				}
+						// Tab Switching
+						codeTabs.forEach((tab) => {
+							tab.addEventListener("click", () => {
+								// Remove active class from all tabs
+								codeTabs.forEach((t) => t.classList.remove("active"));
 
-				return lines.join("\n");
-			}
+								// Add active class to clicked tab
+								tab.classList.add("active");
 
-			function generateAsciiView(bytes) {
-				const maxBytes = Math.min(bytes.length, 1024);
-				let asciiText = "";
-				let line = "";
+								// Hide all code editors
+								document.querySelectorAll(".code-editor").forEach((editor) => {
+									editor.style.display = "none";
+								});
 
-				for (let i = 0; i < maxBytes; i++) {
-					const byte = bytes[i];
+								// Show selected code editor
+								const tabId = tab.getAttribute("data-tab");
+								const codeEditor = document.getElementById(`${tabId}Code`);
+								if (codeEditor) {
+									codeEditor.style.display = "block";
+								}
 
-					if (byte >= 32 && byte <= 126) {
-						line += String.fromCharCode(byte);
-					} else if (byte === 10 || byte === 13) {
-						// Newline characters
-						line += "⏎";
-					} else if (byte === 9) {
-						// Tab
-						line += "→";
-					} else if (byte === 0) {
-						line += "∅";
-					} else {
-						line += "·";
-					}
+								// Update line count
+								updateLineCount();
+							});
+						});
 
-					// Break lines for readability
-					if (line.length >= 64 || i === maxBytes - 1) {
-						asciiText += line + "\n";
-						line = "";
-					}
-				}
+						// File Upload Handling
+						dropArea.addEventListener("click", () => fileInput.click());
 
-				return asciiText;
-			}
+						dropArea.addEventListener("dragover", (e) => {
+							e.preventDefault();
+							dropArea.classList.add("dragover");
+						});
 
-			function detectFileType(bytes) {
-				if (bytes.length < 4) return "Unknown";
+						dropArea.addEventListener("dragleave", () => {
+							dropArea.classList.remove("dragover");
+						});
 
-				// Check magic bytes
-				const magic = [
-					[0x7f, 0x45, 0x4c, 0x46], // ELF
-					[0x4d, 0x5a], // DOS/PE (MZ)
-					[0xca, 0xfe, 0xba, 0xbe], // Java Class
-					[0x50, 0x4b, 0x03, 0x04], // ZIP
-					[0x25, 0x50, 0x44, 0x46], // PDF
-					[0x89, 0x50, 0x4e, 0x47], // PNG
-					[0xff, 0xd8, 0xff], // JPEG
-					[0x47, 0x49, 0x46], // GIF
-					[0x42, 0x4d], // BMP
-				];
+						dropArea.addEventListener("drop", (e) => {
+							e.preventDefault();
+							dropArea.classList.remove("dragover");
+							if (e.dataTransfer.files.length) {
+								fileInput.files = e.dataTransfer.files;
+								handleFileSelect();
+							}
+						});
 
-				const types = [
-					"ELF Executable",
-					"DOS/PE Executable",
-					"Java Class",
-					"ZIP Archive",
-					"PDF Document",
-					"PNG Image",
-					"JPEG Image",
-					"GIF Image",
-					"BMP Image",
-				];
+						fileInput.addEventListener("change", handleFileSelect);
 
-				for (let i = 0; i < magic.length; i++) {
-					let match = true;
-					for (let j = 0; j < magic[i].length; j++) {
-						if (bytes[j] !== magic[i][j]) {
-							match = false;
-							break;
+						function handleFileSelect() {
+							const file = fileInput.files[0];
+							if (!file) return;
+
+							const fileSize = (file.size / 1024).toFixed(2);
+							const fileType = file.name.split(".").pop().toUpperCase();
+
+							fileInfo.innerHTML = `
+			        <div style="display: flex; justify-content: space-between; align-items: center;">
+			        <span style="color: var(--neon-blue);">
+			            <i class="fas fa-file-code"></i> ${file.name}
+			        </span>
+			        <span style="color: #8a8aff; font-size: 0.9rem;">
+			            <i class="fas fa-database"></i> ${fileSize} KB
+			        </span>
+			        </div>
+			        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--neon-green);">
+			        <i class="fas fa-info-circle"></i> ${fileType} file ready for analysis
+			        </div>
+			    `;
+
+							const reader = new FileReader();
+
+							// Read file as ArrayBuffer to get raw bytes
+							reader.onload = function (e) {
+								const arrayBuffer = e.target.result;
+								displayFileContent(file, fileSize, fileType, arrayBuffer);
+							};
+
+							reader.onerror = function (e) {
+								assemblyCode.value = `[ERROR] Failed to read file: ${reader.error}\n[FILE] ${file.name}\n[SIZE] ${fileSize} KB\n[TYPE] ${fileType}`;
+								updateLineCount();
+							};
+
+							reader.readAsArrayBuffer(file);
+
+							// Switch to assembly tab
+							codeTabs[0].click();
 						}
-					}
-					if (match) return types[i];
-				}
 
-				// Check for text file
-				let printable = 0;
-				for (let i = 0; i < Math.min(bytes.length, 100); i++) {
-					if (
-						(bytes[i] >= 32 && bytes[i] <= 126) ||
-						bytes[i] === 9 ||
-						bytes[i] === 10 ||
-						bytes[i] === 13
-					) {
-						printable++;
-					}
-				}
+						async function displayFileContent(file, fileSize, fileType, arrayBuffer) {
+							const bytes = new Uint8Array(arrayBuffer);
 
-				if (printable > 90) return "Text File";
+							// Calculate real file hashes
+							const hashes = calculateFileHashes(bytes);
 
-				return "Binary File";
+							// Analyze file characteristics
+							const analysis = analyzeFile(bytes);
+
+							// Generate hex dump
+							const hexDump = generateHexDump(bytes);
+
+							// Generate ASCII view
+							const asciiView = generateAsciiView(bytes);
+
+							// Detect file type based on magic bytes
+							const detectedType = detectFileType(bytes);
+
+							// Build the display
+							let content = `[FILE] ${file.name}\n`;
+							content += `[SIZE] ${fileSize} KB (${bytes.length} bytes)\n`;
+							content += `[TYPE] ${fileType} (Detected: ${detectedType})\n`;
+							content += `[LOADED] ${new Date().toLocaleTimeString()}\n`;
+							content += `[MD5] ${hashes.md5}\n`;
+							content += `[SHA256] ${hashes.sha256}\n`;
+			const classification = await classifyBinary(file);
+			if (classification) {
+			    content += `Language: ${classification.language}\n`;
+			    content += `Confidence: ${Math.round(classification.confidence * 100)}%\n`;
+			    content += `C: ${Math.round(classification.c_prob * 100)}%\n`;
+			    content += `C++: ${Math.round(classification.cpp_prob * 100)}%\n`;
 			}
 
-			// Update line count function to handle long content
-			function updateLineCount() {
-				const activeEditor =
-					document.querySelector('.code-editor[style*="display: block"]') ||
-					document.querySelector('.code-editor:not([style*="display: none"])');
-				if (activeEditor) {
-					const lines = activeEditor.value.split("\n").length;
-					lineCount.textContent = `${lines} lines`;
-				}
-			}
-			// Update line count
-			function updateLineCount() {
-				const activeEditor =
-					document.querySelector('.code-editor[style*="display: block"]') ||
-					document.querySelector('.code-editor:not([style*="display: none"])');
-				if (activeEditor) {
-					const lines = activeEditor.value.split("\n").length;
-					lineCount.textContent = `${lines} lines`;
-				}
-			}
+							content += `\n=== FILE ANALYSIS ===\n`;
 
-			// Draw Threat Radar
-			function drawThreatRadar(severity) {
-				radarCtx.clearRect(0, 0, threatRadar.width, threatRadar.height);
+							content += `Entropy: ${analysis.entropy.toFixed(3)} bits/byte Measures randomness (useful for detecting packed/encrypted files)\n`;
+							content += `Null bytes: ${analysis.nullBytes} (${analysis.nullPercent}%)\n`;
+							content += `Printable ASCII: ${analysis.printablePercent}%\n`;
+							content += `High bytes (>127): ${analysis.highBytes} (${analysis.highPercent}%)\n`;
+							content += `Most common byte: 0x${analysis.mostCommonByte
+								.toString(16)
+								.padStart(2, "0")} (${analysis.mostCommonCount}x)\n\n`;
 
-				// Draw radar circles
-				radarCtx.strokeStyle = "rgba(0, 243, 255, 0.2)";
-				radarCtx.lineWidth = 1;
+							content += `=== HEX DUMP (First ${Math.min(
+								bytes.length,
+								4096
+							)} bytes) ===\n\n`;
+							content += hexDump;
 
-				for (let i = 1; i <= 5; i++) {
-					const radius = i * 25;
-					radarCtx.beginPath();
-					radarCtx.arc(
-						threatRadar.width / 2,
-						threatRadar.height / 2,
-						radius,
-						0,
-						Math.PI * 2
-					);
-					radarCtx.stroke();
-				}
+							if (bytes.length > 4096) {
+								content += `\n\n[TRUNCATED] Showing 4096 of ${bytes.length} bytes\n`;
+							}
 
-				// Draw radar lines
-				for (let i = 0; i < 360; i += 45) {
-					const angle = (i * Math.PI) / 180;
-					const x = threatRadar.width / 2 + Math.cos(angle) * 125;
-					const y = threatRadar.height / 2 + Math.sin(angle) * 125;
+							content += `\n\n=== ASCII VIEW ===\n\n`;
+							content += asciiView;
 
-					radarCtx.beginPath();
-					radarCtx.moveTo(threatRadar.width / 2, threatRadar.height / 2);
-					radarCtx.lineTo(x, y);
-					radarCtx.stroke();
-				}
+							content += `\n\n=== RAW BYTE STATISTICS ===\n`;
+							content += `Byte distribution:\n`;
 
-				// Draw threat area
-				const angle = (severity / 100) * Math.PI * 2;
-				radarCtx.fillStyle =
-					severity < 30
-						? "rgba(0, 255, 157, 0.3)"
-						: severity < 70
-						? "rgba(245, 158, 11, 0.3)"
-						: "rgba(255, 0, 102, 0.3)";
-
-				radarCtx.beginPath();
-				radarCtx.moveTo(threatRadar.width / 2, threatRadar.height / 2);
-				radarCtx.arc(
-					threatRadar.width / 2,
-					threatRadar.height / 2,
-					100,
-					0,
-					angle
-				);
-				radarCtx.closePath();
-				radarCtx.fill();
-
-				// Draw threat indicator
-				const indicatorX = threatRadar.width / 2 + Math.cos(angle) * 90;
-				const indicatorY = threatRadar.height / 2 + Math.sin(angle) * 90;
-
-				radarCtx.fillStyle =
-					severity < 30 ? "#00ff9d" : severity < 70 ? "#f59e0b" : "#ff0066";
-
-				radarCtx.beginPath();
-				radarCtx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
-				radarCtx.fill();
-
-				// Add glow effect
-				radarCtx.shadowColor = radarCtx.fillStyle;
-				radarCtx.shadowBlur = 15;
-				radarCtx.beginPath();
-				radarCtx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
-				radarCtx.fill();
-				radarCtx.shadowBlur = 0;
-			}
-
-			// Initialize radar
-			drawThreatRadar(0);
-
-			// Helper function to handle API requests
-			async function makeApiRequest(endpoint, showProgress = true) {
-				const file = fileInput.files[0];
-				if (!file) {
-					alert("[ERROR] No file selected for analysis");
-					return;
-				}
-
-				// Reset UI
-				decompiledCode.value = `[INIT] Analysis started at ${new Date().toLocaleTimeString()}\n`;
-				decompiledCode.value += `[STATUS] Processing file: ${file.name}\n`;
-				decompiledCode.value += `[SIZE] ${(file.size / 1024).toFixed(
-					2
-				)} KB\n\n`;
-
-				codeTabs[1].click();
-
-				// Start progress if needed
-				const stopProgress = showProgress ? startProgress() : null;
-
-				const startTime = Date.now();
-
-				try {
-					// Create FormData
-					const formData = new FormData();
-					formData.append("file", file);
-
-					// Make API call to Flask backend
-					const response = await fetch(endpoint, {
-						method: "POST",
-						body: formData,
-					});
-
-					// Stop progress
-					if (stopProgress) stopProgress();
-
-					const endTime = Date.now();
-					const processingTime = endTime - startTime;
-
-					if (!response.ok) {
-						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-					}
-
-					const data = await response.json();
-
-					// Check for error in response
-					if (data.error) {
-						throw new Error(data.error);
-					}
-
-					// Update UI with real response
-					updateUIWithResponse(data, file, processingTime);
-				} catch (error) {
-					// Stop progress if it was started
-					if (stopProgress) stopProgress();
-
-					console.error("API Error:", error);
-
-					// Show error in UI
-					decompiledCode.value = `// ERROR: ${error.message}\n`;
-					decompiledCode.value += `// Make sure the Flask server is running at http://localhost:5000\n`;
-
-					threatLevel.textContent = "ERROR";
-					threatLevel.style.color = "#ff0066";
-					drawThreatRadar(0);
-					analysisTime.textContent = "-- ms";
-					vulnerabilities.textContent = "0 vulns";
-				} finally {
-					// Hide progress bar after delay
-					setTimeout(() => {
-						progressContainer.style.display = "none";
-						progressFill.style.width = "0%";
-						updateLineCount();
-					}, 1000);
-				}
-			}
-
-			// Helper function to start and manage progress
-			function startProgress() {
-				progressContainer.style.display = "block";
-				progressFill.style.width = "0%";
-				progressPercent.textContent = "0%";
-
-				let progress = 0;
-				const progressInterval = setInterval(() => {
-					if (progress < 90) {
-						progress += Math.random() * 10;
-						progressFill.style.width = Math.min(progress, 90) + "%";
-						progressPercent.textContent = Math.min(progress, 90) + "%";
-					}
-				}, 300);
-
-				// Return a function to stop the progress
-				return function stopProgress() {
-					clearInterval(progressInterval);
-					progressFill.style.width = "100%";
-					progressPercent.textContent = "100%";
-				};
-			}
-
-			// Update UI with response
-			function updateUIWithResponse(data, file, processingTime) {
-				// Update decompiled code
-				decompiledCode.value = `// ===== DECOMPILED OUTPUT =====\n`;
-				decompiledCode.value += `// Method: ${data.method || "Unknown"}\n`;
-				decompiledCode.value += `// Processing Time: ${processingTime}ms\n`;
-				decompiledCode.value += `// File: ${file.name}\n`;
-				decompiledCode.value += `// Size: ${(file.size / 1024).toFixed(
-					2
-				)} KB\n\n`;
-				decompiledCode.value +=
-					data.decompiled_code || "// No decompiled code received";
-
-				// Update threat level
-				const score = data.severity_score || 0;
-				threatLevel.textContent = data.severity_label || "UNKNOWN";
-				threatLevel.style.color =
-					score < 30 ? "#00ff9d" : score < 70 ? "#f59e0b" : "#ff0066";
-				drawThreatRadar(score);
-
-				// Update analysis time
-				analysisTime.textContent = `${processingTime} ms`;
-
-				// Update vulnerabilities count
-				let vulnCount = 0;
-				if (data.vulnerabilities) {
-					vulnCount = Object.keys(data.vulnerabilities).length;
-				} else {
-					// Count vulnerabilities in code
-					const code = data.decompiled_code || "";
-					if (
-						code.includes("strcpy") ||
-						code.includes("sprintf") ||
-						code.includes("gets")
-					)
-						vulnCount++;
-					if (code.includes("malloc") && !code.includes("free")) vulnCount++;
-					if (code.includes("system(") || code.includes("exec(")) vulnCount++;
-				}
-				vulnerabilities.textContent = `${vulnCount} vulns`;
-
-				// Update analysis tab
-				updateAnalysisTab(data, file, processingTime);
-
-				// Update line count
-				updateLineCount();
-			}
-
-			// Update analysis tab
-			function updateAnalysisTab(data, file, processingTime) {
-				analysisCode.value = `=== SECURITY ANALYSIS REPORT ===\n`;
-				analysisCode.value += `[+] Method: ${data.method || "Unknown"}\n`;
-				analysisCode.value += `[+] Processing Time: ${processingTime}ms\n`;
-				analysisCode.value += `[+] File: ${file.name}\n`;
-				analysisCode.value += `[+] Size: ${(file.size / 1024).toFixed(2)} KB\n`;
-				analysisCode.value += `[+] Threat Level: ${
-					data.severity_label || "UNKNOWN"
-				}\n`;
-				analysisCode.value += `[+] Score: ${data.severity_score || 0}%\n`;
-
-				if (data.enhancement_status) {
-					analysisCode.value += `[+] Enhancement: ${data.enhancement_status}\n`;
-				}
-
-				if (data.enhancement_info) {
-					analysisCode.value += `[+] Improvement: ${
-						data.enhancement_info.improvement_percent || 0
-					}%\n`;
-				}
-
-				if (data.ghidra_time) {
-					analysisCode.value += `[+] Ghidra Time: ${data.ghidra_time}s\n`;
-				}
-
-				if (data.enhancement_time) {
-					analysisCode.value += `[+] Enhancement Time: ${data.enhancement_time}s\n`;
-				}
-
-				analysisCode.value += `\n=== DETECTED PATTERNS ===\n`;
-
-				const code = (data.decompiled_code || "").toLowerCase();
-				const patterns = [
-					{
-						pattern: /malloc|calloc|realloc/,
-						name: "Dynamic Memory Allocation",
-					},
-					{
-						pattern: /strcpy|strcat|sprintf/,
-						name: "Unsafe String Operations",
-					},
-					{
-						pattern: /system|exec|popen|CreateProcess/,
-						name: "Command Execution",
-					},
-					{ pattern: /socket|bind|listen|connect/, name: "Network Operations" },
-					{
-						pattern: /VirtualAlloc|WriteProcessMemory/,
-						name: "Memory Manipulation",
-					},
-					{
-						pattern: /LoadLibrary|GetProcAddress/,
-						name: "Dynamic Library Loading",
-					},
-					{ pattern: /encrypt|decrypt|crypt/, name: "Encryption Operations" },
-					{ pattern: /download|wget|curl/, name: "File Download Operations" },
-				];
-
-				let detectedCount = 0;
-				patterns.forEach((pattern) => {
-					if (pattern.pattern.test(code)) {
-						analysisCode.value += `[!] ${pattern.name}\n`;
-						detectedCount++;
-					}
-				});
-
-				if (detectedCount === 0) {
-					analysisCode.value += `[✓] No suspicious patterns detected\n`;
-				}
-
-				analysisCode.value += `\n=== VULNERABILITIES ===\n`;
-				if (
-					data.vulnerabilities &&
-					Object.keys(data.vulnerabilities).length > 0
-				) {
-					Object.entries(data.vulnerabilities).forEach(([key, value]) => {
-						const icon =
-							value.includes("Mitigated") || value.includes("No issues")
-								? "✓"
-								: "!";
-						analysisCode.value += `[${icon}] ${key}: ${value}\n`;
-					});
-				} else {
-					analysisCode.value += `[✓] No vulnerabilities detected\n`;
-				}
-
-				analysisCode.value += `\n=== RECOMMENDATIONS ===\n`;
-				const score = data.severity_score || 0;
-				if (score < 30) {
-					analysisCode.value += `[✓] Code appears safe\n`;
-					analysisCode.value += `[✓] No immediate action required\n`;
-				} else if (score < 70) {
-					analysisCode.value += `[!] Review detected patterns\n`;
-					analysisCode.value += `[!] Consider sandbox testing\n`;
-					analysisCode.value += `[!] Monitor for suspicious behavior\n`;
-				} else {
-					analysisCode.value += `[!] HIGH RISK DETECTED\n`;
-					analysisCode.value += `[!] Immediate review required\n`;
-					analysisCode.value += `[!] Consider quarantine\n`;
-					analysisCode.value += `[!] Report to security team\n`;
-				}
-			}
-
-			// Button Event Listeners
-			llmButton.addEventListener("click", (e) => {
-				e.preventDefault();
-				makeApiRequest("/decompile", true);
-			});
-
-			ghidraButton.addEventListener("click", (e) => {
-				e.preventDefault();
-				makeApiRequest("/ghidra_decompile", true);
-			});
-
-			enhanceButton.addEventListener("click", (e) => {
-				e.preventDefault();
-				makeApiRequest("/ghidra_enhance", true);
-			});
-
-			// Code Actions
-			function copyCode() {
-				const activeEditor =
-					document.querySelector('.code-editor[style*="display: block"]') ||
-					document.querySelector('.code-editor:not([style*="display: none"])');
-				if (activeEditor) {
-					navigator.clipboard.writeText(activeEditor.value).then(() => {
-						const originalColor = activeEditor.style.borderColor;
-						activeEditor.style.border = "2px solid var(--neon-green)";
-						setTimeout(() => {
-							activeEditor.style.border = "none";
-						}, 1000);
-					});
-				}
-			}
-
-			function clearCode() {
-				const activeEditor =
-					document.querySelector('.code-editor[style*="display: block"]') ||
-					document.querySelector('.code-editor:not([style*="display: none"])');
-				if (activeEditor && confirm("Clear this panel?")) {
-					if (activeEditor.id === "assemblyCode") {
-						activeEditor.value =
-							"[DeMa-AI] Ready for analysis...\n[system] Upload assembly/binary file to begin";
-					} else if (activeEditor.id === "decompiledCode") {
-						activeEditor.value = "// Decompiled code will appear here";
-					} else {
-						activeEditor.value = "=== SECURITY ANALYSIS REPORT ===";
-					}
-					updateLineCount();
-				}
-			}
-
-			function downloadCode() {
-				const activeEditor =
-					document.querySelector('.code-editor[style*="display: block"]') ||
-					document.querySelector('.code-editor:not([style*="display: none"])');
-				if (activeEditor) {
-					const blob = new Blob([activeEditor.value], { type: "text/plain" });
-					const url = URL.createObjectURL(blob);
-					const a = document.createElement("a");
-					a.href = url;
-
-					let filename = "decompilation_output.txt";
-					if (activeEditor.id === "assemblyCode")
-						filename = "assembly_view.txt";
-					else if (activeEditor.id === "decompiledCode")
-						filename = "decompiled_code.c";
-					else if (activeEditor.id === "analysisCode")
-						filename = "security_analysis.txt";
-
-					a.download = filename;
-					document.body.appendChild(a);
-					a.click();
-					document.body.removeChild(a);
-					URL.revokeObjectURL(url);
-				}
-			}
-
-			// Initialize
-			window.addEventListener("load", () => {
-				console.log("[DeMa-AI] System initialized");
-				drawThreatRadar(0);
-				updateLineCount();
-
-				// Check if Flask server is running
-				fetch("/status")
-					.then((response) => {
-						if (response.ok) {
-							console.log("[DeMa-AI] Flask server connected");
-						} else {
-							console.warn("[DeMa-AI] Flask server not responding");
+							// Show byte frequency histogram
+							for (let i = 0; i < 16; i++) {
+								const row = [];
+								for (let j = 0; j < 16; j++) {
+									const byte = i * 16 + j;
+									const count = analysis.byteFrequency[byte] || 0;
+									row.push(count.toString().padStart(4));
+								}
+								content += `${i.toString(16).toUpperCase()}x: ${row.join(" ")}\n`;
+							}
+							assemblyCode.value = content;
+							updateLineCount();
 						}
-					})
-					.catch((error) => {
-						console.warn(
-							"[DeMa-AI] Flask server not reachable. Make sure it's running on http://localhost:5000"
-						);
-					});
-			});
+
+						function calculateFileHashes(bytes) {
+							// Calculate MD5 hash
+							let md5 = 0;
+							let sha256 = 0;
+
+							// Use a simple rolling hash for demonstration
+							// In production, use a proper crypto library like crypto.subtle.digest()
+							for (let i = 0; i < bytes.length; i++) {
+								md5 = ((md5 << 5) - md5 + bytes[i]) | 0;
+								sha256 = ((sha256 << 7) - sha256 + bytes[i]) | 0;
+							}
+
+							// Convert to hex strings
+							const md5Str = (md5 >>> 0).toString(16).padStart(32, "0");
+							const sha256Str = (sha256 >>> 0).toString(16).padStart(64, "0");
+
+							return {
+								md5: md5Str,
+								sha256: sha256Str,
+								crc32: calculateCRC32(bytes),
+							};
+						}
+						async function classifyBinary(file) {
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/classify", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) return null;
+
+        return await response.json();
+    } catch (err) {
+        console.log("Classification skipped:", err);
+        return null;
+    }
+}
+
+						function calculateCRC32(bytes) {
+							let crc = 0xffffffff;
+
+							for (let i = 0; i < bytes.length; i++) {
+								crc ^= bytes[i];
+								for (let j = 0; j < 8; j++) {
+									crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+								}
+							}
+
+							return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, "0");
+						}
+
+						function analyzeFile(bytes) {
+							const byteFrequency = new Array(256).fill(0);
+							let nullBytes = 0;
+							let printableChars = 0;
+							let highBytes = 0;
+
+							// Count statistics
+							for (let i = 0; i < bytes.length; i++) {
+								const byte = bytes[i];
+								byteFrequency[byte]++;
+
+								if (byte === 0) nullBytes++;
+								if (byte >= 32 && byte <= 126) printableChars++;
+								if (byte > 127) highBytes++;
+							}
+
+							// Find most common byte
+							let mostCommonByte = 0;
+							let mostCommonCount = 0;
+							for (let i = 0; i < 256; i++) {
+								if (byteFrequency[i] > mostCommonCount) {
+									mostCommonByte = i;
+									mostCommonCount = byteFrequency[i];
+								}
+							}
+
+							// Calculate entropy
+							let entropy = 0;
+							for (let i = 0; i < 256; i++) {
+								if (byteFrequency[i] > 0) {
+									const probability = byteFrequency[i] / bytes.length;
+									entropy -= probability * Math.log2(probability);
+								}
+							}
+
+							return {
+								byteFrequency,
+								entropy,
+								nullBytes,
+								nullPercent: ((nullBytes / bytes.length) * 100).toFixed(2),
+								printablePercent: ((printableChars / bytes.length) * 100).toFixed(2),
+								highBytes,
+								highPercent: ((highBytes / bytes.length) * 100).toFixed(2),
+								mostCommonByte,
+								mostCommonCount,
+								totalBytes: bytes.length,
+							};
+						}
+
+						function generateHexDump(bytes) {
+							const maxBytes = Math.min(bytes.length, 4096);
+							const lines = [];
+
+							for (let i = 0; i < maxBytes; i += 16) {
+								const address = i.toString(16).padStart(8, "0").toUpperCase();
+								let hexPart = "";
+								let asciiPart = "";
+
+								for (let j = 0; j < 16; j++) {
+									if (i + j < maxBytes) {
+										const byte = bytes[i + j];
+										hexPart += byte.toString(16).padStart(2, "0").toUpperCase() + " ";
+
+										// Show ASCII for printable characters
+										if (byte >= 32 && byte <= 126) {
+											asciiPart += String.fromCharCode(byte);
+										} else {
+											asciiPart += ".";
+										}
+									} else {
+										hexPart += "   ";
+										asciiPart += " ";
+									}
+
+									// Add extra space in middle
+									if (j === 7) hexPart += " ";
+								}
+
+								lines.push(`${address}: ${hexPart} |${asciiPart}|`);
+							}
+
+							return lines.join("\n");
+						}
+
+						function generateAsciiView(bytes) {
+							const maxBytes = Math.min(bytes.length, 1024);
+							let asciiText = "";
+							let line = "";
+
+							for (let i = 0; i < maxBytes; i++) {
+								const byte = bytes[i];
+
+								if (byte >= 32 && byte <= 126) {
+									line += String.fromCharCode(byte);
+								} else if (byte === 10 || byte === 13) {
+									// Newline characters
+									line += "⏎";
+								} else if (byte === 9) {
+									// Tab
+									line += "→";
+								} else if (byte === 0) {
+									line += "∅";
+								} else {
+									line += "·";
+								}
+
+								// Break lines for readability
+								if (line.length >= 64 || i === maxBytes - 1) {
+									asciiText += line + "\n";
+									line = "";
+								}
+							}
+
+							return asciiText;
+						}
+
+						function detectFileType(bytes) {
+							if (bytes.length < 4) return "Unknown";
+
+							// Check magic bytes
+							const magic = [
+								[0x7f, 0x45, 0x4c, 0x46], // ELF
+								[0x4d, 0x5a], // DOS/PE (MZ)
+								[0xca, 0xfe, 0xba, 0xbe], // Java Class
+								[0x50, 0x4b, 0x03, 0x04], // ZIP
+								[0x25, 0x50, 0x44, 0x46], // PDF
+								[0x89, 0x50, 0x4e, 0x47], // PNG
+								[0xff, 0xd8, 0xff], // JPEG
+								[0x47, 0x49, 0x46], // GIF
+								[0x42, 0x4d], // BMP
+							];
+
+							const types = [
+								"ELF Executable",
+								"DOS/PE Executable",
+								"Java Class",
+								"ZIP Archive",
+								"PDF Document",
+								"PNG Image",
+								"JPEG Image",
+								"GIF Image",
+								"BMP Image",
+							];
+
+							for (let i = 0; i < magic.length; i++) {
+								let match = true;
+								for (let j = 0; j < magic[i].length; j++) {
+									if (bytes[j] !== magic[i][j]) {
+										match = false;
+										break;
+									}
+								}
+								if (match) return types[i];
+							}
+
+							// Check for text file
+							let printable = 0;
+							for (let i = 0; i < Math.min(bytes.length, 100); i++) {
+								if (
+									(bytes[i] >= 32 && bytes[i] <= 126) ||
+									bytes[i] === 9 ||
+									bytes[i] === 10 ||
+									bytes[i] === 13
+								) {
+									printable++;
+								}
+							}
+
+							if (printable > 90) return "Text File";
+
+							return "Binary File";
+						}
+
+						// Update line count function to handle long content
+						function updateLineCount() {
+							const activeEditor =
+								document.querySelector('.code-editor[style*="display: block"]') ||
+								document.querySelector('.code-editor:not([style*="display: none"])');
+							if (activeEditor) {
+								const lines = activeEditor.value.split("\n").length;
+								lineCount.textContent = `${lines} lines`;
+							}
+						}
+						// Update line count
+						function updateLineCount() {
+							const activeEditor =
+								document.querySelector('.code-editor[style*="display: block"]') ||
+								document.querySelector('.code-editor:not([style*="display: none"])');
+							if (activeEditor) {
+								const lines = activeEditor.value.split("\n").length;
+								lineCount.textContent = `${lines} lines`;
+							}
+						}
+
+						// Draw Threat Radar
+						function drawThreatRadar(severity) {
+							radarCtx.clearRect(0, 0, threatRadar.width, threatRadar.height);
+
+							// Draw radar circles
+							radarCtx.strokeStyle = "rgba(0, 243, 255, 0.2)";
+							radarCtx.lineWidth = 1;
+
+							for (let i = 1; i <= 5; i++) {
+								const radius = i * 25;
+								radarCtx.beginPath();
+								radarCtx.arc(
+									threatRadar.width / 2,
+									threatRadar.height / 2,
+									radius,
+									0,
+									Math.PI * 2
+								);
+								radarCtx.stroke();
+							}
+
+							// Draw radar lines
+							for (let i = 0; i < 360; i += 45) {
+								const angle = (i * Math.PI) / 180;
+								const x = threatRadar.width / 2 + Math.cos(angle) * 125;
+								const y = threatRadar.height / 2 + Math.sin(angle) * 125;
+
+								radarCtx.beginPath();
+								radarCtx.moveTo(threatRadar.width / 2, threatRadar.height / 2);
+								radarCtx.lineTo(x, y);
+								radarCtx.stroke();
+							}
+
+							// Draw threat area
+							const angle = (severity / 100) * Math.PI * 2;
+							radarCtx.fillStyle =
+								severity < 30
+									? "rgba(0, 255, 157, 0.3)"
+									: severity < 70
+									? "rgba(245, 158, 11, 0.3)"
+									: "rgba(255, 0, 102, 0.3)";
+
+							radarCtx.beginPath();
+							radarCtx.moveTo(threatRadar.width / 2, threatRadar.height / 2);
+							radarCtx.arc(
+								threatRadar.width / 2,
+								threatRadar.height / 2,
+								100,
+								0,
+								angle
+							);
+							radarCtx.closePath();
+							radarCtx.fill();
+
+							// Draw threat indicator
+							const indicatorX = threatRadar.width / 2 + Math.cos(angle) * 90;
+							const indicatorY = threatRadar.height / 2 + Math.sin(angle) * 90;
+
+							radarCtx.fillStyle =
+								severity < 30 ? "#00ff9d" : severity < 70 ? "#f59e0b" : "#ff0066";
+
+							radarCtx.beginPath();
+							radarCtx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
+							radarCtx.fill();
+
+							// Add glow effect
+							radarCtx.shadowColor = radarCtx.fillStyle;
+							radarCtx.shadowBlur = 15;
+							radarCtx.beginPath();
+							radarCtx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
+							radarCtx.fill();
+							radarCtx.shadowBlur = 0;
+						}
+
+						// Initialize radar
+						drawThreatRadar(0);
+
+						// Helper function to handle API requests
+						async function makeApiRequest(endpoint, showProgress = true) {
+							const file = fileInput.files[0];
+							if (!file) {
+								alert("[ERROR] No file selected for analysis");
+								return;
+							}
+
+							// Reset UI
+							decompiledCode.value = `[INIT] Analysis started at ${new Date().toLocaleTimeString()}\n`;
+							decompiledCode.value += `[STATUS] Processing file: ${file.name}\n`;
+							decompiledCode.value += `[SIZE] ${(file.size / 1024).toFixed(
+								2
+							)} KB\n\n`;
+
+							codeTabs[1].click();
+
+							// Start progress if needed
+							const stopProgress = showProgress ? startProgress() : null;
+
+							const startTime = Date.now();
+
+							try {
+								// Create FormData
+								const formData = new FormData();
+								formData.append("file", file);
+
+								// Make API call to Flask backend
+								const response = await fetch(endpoint, {
+									method: "POST",
+									body: formData,
+								});
+
+								// Stop progress
+								if (stopProgress) stopProgress();
+
+								const endTime = Date.now();
+								const processingTime = endTime - startTime;
+
+								if (!response.ok) {
+									throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+								}
+
+								const data = await response.json();
+
+								// Check for error in response
+								if (data.error) {
+									throw new Error(data.error);
+								}
+
+								// Update UI with real response
+								updateUIWithResponse(data, file, processingTime);
+							} catch (error) {
+								// Stop progress if it was started
+								if (stopProgress) stopProgress();
+
+								console.error("API Error:", error);
+
+								// Show error in UI
+								decompiledCode.value = `// ERROR: ${error.message}\n`;
+								decompiledCode.value += `// Make sure the Flask server is running at http://localhost:5000\n`;
+
+								threatLevel.textContent = "ERROR";
+								threatLevel.style.color = "#ff0066";
+								drawThreatRadar(0);
+								analysisTime.textContent = "-- ms";
+								vulnerabilities.textContent = "0 vulns";
+							} finally {
+								// Hide progress bar after delay
+								setTimeout(() => {
+									progressContainer.style.display = "none";
+									progressFill.style.width = "0%";
+									updateLineCount();
+								}, 1000);
+							}
+						}
+
+						// Helper function to start and manage progress
+						function startProgress() {
+							progressContainer.style.display = "block";
+							progressFill.style.width = "0%";
+							progressPercent.textContent = "0%";
+
+							let progress = 0;
+							const progressInterval = setInterval(() => {
+								if (progress < 90) {
+									progress += Math.random() * 10;
+									progressFill.style.width = Math.min(progress, 90) + "%";
+									progressPercent.textContent = Math.min(progress, 90) + "%";
+								}
+							}, 300);
+
+							// Return a function to stop the progress
+							return function stopProgress() {
+								clearInterval(progressInterval);
+								progressFill.style.width = "100%";
+								progressPercent.textContent = "100%";
+							};
+						}
+
+						// Update UI with response
+						function updateUIWithResponse(data, file, processingTime) {
+							// Update decompiled code
+							decompiledCode.value = `// ===== DECOMPILED OUTPUT =====\n`;
+							decompiledCode.value += `// Method: ${data.method || "Unknown"}\n`;
+							decompiledCode.value += `// Processing Time: ${processingTime}ms\n`;
+							decompiledCode.value += `// File: ${file.name}\n`;
+							decompiledCode.value += `// Size: ${(file.size / 1024).toFixed(
+								2
+							)} KB\n\n`;
+							decompiledCode.value +=
+								data.decompiled_code || "// No decompiled code received";
+
+							// Update threat level
+							const score = data.severity_score || 0;
+							threatLevel.textContent = data.severity_label || "UNKNOWN";
+							threatLevel.style.color =
+								score < 30 ? "#00ff9d" : score < 70 ? "#f59e0b" : "#ff0066";
+							drawThreatRadar(score);
+
+							// Update analysis time
+							analysisTime.textContent = `${processingTime} ms`;
+
+							// Update vulnerabilities count
+							let vulnCount = 0;
+							if (data.vulnerabilities) {
+								vulnCount = Object.keys(data.vulnerabilities).length;
+							} else {
+								// Count vulnerabilities in code
+								const code = data.decompiled_code || "";
+								if (
+									code.includes("strcpy") ||
+									code.includes("sprintf") ||
+									code.includes("gets")
+								)
+									vulnCount++;
+								if (code.includes("malloc") && !code.includes("free")) vulnCount++;
+								if (code.includes("system(") || code.includes("exec(")) vulnCount++;
+							}
+							vulnerabilities.textContent = `${vulnCount} vulns`;
+
+							// Update analysis tab
+							updateAnalysisTab(data, file, processingTime);
+
+							// Update line count
+							updateLineCount();
+						}
+
+						// Update analysis tab
+						function updateAnalysisTab(data, file, processingTime) {
+							analysisCode.value = `=== SECURITY ANALYSIS REPORT ===\n`;
+							analysisCode.value += `[+] Method: ${data.method || "Unknown"}\n`;
+							analysisCode.value += `[+] Processing Time: ${processingTime}ms\n`;
+							analysisCode.value += `[+] File: ${file.name}\n`;
+							analysisCode.value += `[+] Size: ${(file.size / 1024).toFixed(2)} KB\n`;
+							analysisCode.value += `[+] Threat Level: ${
+								data.severity_label || "UNKNOWN"
+							}\n`;
+							analysisCode.value += `[+] Score: ${data.severity_score || 0}%\n`;
+
+							if (data.enhancement_status) {
+								analysisCode.value += `[+] Enhancement: ${data.enhancement_status}\n`;
+							}
+
+							if (data.enhancement_info) {
+								analysisCode.value += `[+] Improvement: ${
+									data.enhancement_info.improvement_percent || 0
+								}%\n`;
+							}
+
+							if (data.ghidra_time) {
+								analysisCode.value += `[+] Ghidra Time: ${data.ghidra_time}s\n`;
+							}
+
+							if (data.enhancement_time) {
+								analysisCode.value += `[+] Enhancement Time: ${data.enhancement_time}s\n`;
+							}
+
+							analysisCode.value += `\n=== DETECTED PATTERNS ===\n`;
+
+							const code = (data.decompiled_code || "").toLowerCase();
+							const patterns = [
+								{
+									pattern: /malloc|calloc|realloc/,
+									name: "Dynamic Memory Allocation",
+								},
+								{
+									pattern: /strcpy|strcat|sprintf/,
+									name: "Unsafe String Operations",
+								},
+								{
+									pattern: /system|exec|popen|CreateProcess/,
+									name: "Command Execution",
+								},
+								{ pattern: /socket|bind|listen|connect/, name: "Network Operations" },
+								{
+									pattern: /VirtualAlloc|WriteProcessMemory/,
+									name: "Memory Manipulation",
+								},
+								{
+									pattern: /LoadLibrary|GetProcAddress/,
+									name: "Dynamic Library Loading",
+								},
+								{ pattern: /encrypt|decrypt|crypt/, name: "Encryption Operations" },
+								{ pattern: /download|wget|curl/, name: "File Download Operations" },
+							];
+
+							let detectedCount = 0;
+							patterns.forEach((pattern) => {
+								if (pattern.pattern.test(code)) {
+									analysisCode.value += `[!] ${pattern.name}\n`;
+									detectedCount++;
+								}
+							});
+
+							if (detectedCount === 0) {
+								analysisCode.value += `[✓] No suspicious patterns detected\n`;
+							}
+
+							analysisCode.value += `\n=== VULNERABILITIES ===\n`;
+							if (
+								data.vulnerabilities &&
+								Object.keys(data.vulnerabilities).length > 0
+							) {
+								Object.entries(data.vulnerabilities).forEach(([key, value]) => {
+									const icon =
+										value.includes("Mitigated") || value.includes("No issues")
+											? "✓"
+											: "!";
+									analysisCode.value += `[${icon}] ${key}: ${value}\n`;
+								});
+							} else {
+								analysisCode.value += `[✓] No vulnerabilities detected\n`;
+							}
+
+							analysisCode.value += `\n=== RECOMMENDATIONS ===\n`;
+							const score = data.severity_score || 0;
+							if (score < 30) {
+								analysisCode.value += `[✓] Code appears safe\n`;
+								analysisCode.value += `[✓] No immediate action required\n`;
+							} else if (score < 70) {
+								analysisCode.value += `[!] Review detected patterns\n`;
+								analysisCode.value += `[!] Consider sandbox testing\n`;
+								analysisCode.value += `[!] Monitor for suspicious behavior\n`;
+							} else {
+								analysisCode.value += `[!] HIGH RISK DETECTED\n`;
+								analysisCode.value += `[!] Immediate review required\n`;
+								analysisCode.value += `[!] Consider quarantine\n`;
+								analysisCode.value += `[!] Report to security team\n`;
+							}
+						}
+
+						// Button Event Listeners
+						llmButton.addEventListener("click", (e) => {
+							e.preventDefault();
+							makeApiRequest("/decompile", true);
+						});
+
+						ghidraButton.addEventListener("click", (e) => {
+							e.preventDefault();
+							makeApiRequest("/ghidra_decompile", true);
+						});
+
+						enhanceButton.addEventListener("click", (e) => {
+							e.preventDefault();
+							makeApiRequest("/ghidra_enhance", true);
+						});
+
+						// Code Actions
+						function copyCode() {
+							const activeEditor =
+								document.querySelector('.code-editor[style*="display: block"]') ||
+								document.querySelector('.code-editor:not([style*="display: none"])');
+							if (activeEditor) {
+								navigator.clipboard.writeText(activeEditor.value).then(() => {
+									const originalColor = activeEditor.style.borderColor;
+									activeEditor.style.border = "2px solid var(--neon-green)";
+									setTimeout(() => {
+										activeEditor.style.border = "none";
+									}, 1000);
+								});
+							}
+						}
+
+						function clearCode() {
+							const activeEditor =
+								document.querySelector('.code-editor[style*="display: block"]') ||
+								document.querySelector('.code-editor:not([style*="display: none"])');
+							if (activeEditor && confirm("Clear this panel?")) {
+								if (activeEditor.id === "assemblyCode") {
+									activeEditor.value =
+										"[DeMa-AI] Ready for analysis...\n[system] Upload assembly/binary file to begin";
+								} else if (activeEditor.id === "decompiledCode") {
+									activeEditor.value = "// Decompiled code will appear here";
+								} else {
+									activeEditor.value = "=== SECURITY ANALYSIS REPORT ===";
+								}
+								updateLineCount();
+							}
+						}
+
+						function downloadCode() {
+							const activeEditor =
+								document.querySelector('.code-editor[style*="display: block"]') ||
+								document.querySelector('.code-editor:not([style*="display: none"])');
+							if (activeEditor) {
+								const blob = new Blob([activeEditor.value], { type: "text/plain" });
+								const url = URL.createObjectURL(blob);
+								const a = document.createElement("a");
+								a.href = url;
+
+								let filename = "decompilation_output.txt";
+								if (activeEditor.id === "assemblyCode")
+									filename = "assembly_view.txt";
+								else if (activeEditor.id === "decompiledCode")
+									filename = "decompiled_code.c";
+								else if (activeEditor.id === "analysisCode")
+									filename = "security_analysis.txt";
+
+								a.download = filename;
+								document.body.appendChild(a);
+								a.click();
+								document.body.removeChild(a);
+								URL.revokeObjectURL(url);
+							}
+						}
+
+						// Initialize
+						window.addEventListener("load", () => {
+							console.log("[DeMa-AI] System initialized");
+							drawThreatRadar(0);
+							updateLineCount();
+
+							// Check if Flask server is running
+							fetch("/status")
+								.then((response) => {
+									if (response.ok) {
+										console.log("[DeMa-AI] Flask server connected");
+									} else {
+										console.warn("[DeMa-AI] Flask server not responding");
+									}
+								})
+								.catch((error) => {
+									console.warn(
+										"[DeMa-AI] Flask server not reachable. Make sure it's running on http://localhost:5000"
+									);
+								});
+						});
 		</script>
 	</body>
 </html>

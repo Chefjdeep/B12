@@ -57,9 +57,9 @@ CORS(app)
 ENHANCEMENT_MODE = "colab"  # Change to "local" if you want local model
 
 # Colab URL (for colab mode)
-COLAB_NGROK_URL = "https://ja-precongested-ungenuinely.ngrok-free.dev/llm4decompile"
+COLAB_NGROK_URL = "https://joetta-colorimetric-audra.ngrok-free.dev/llm4decompile"
 
-# Initialize enhancer
+# Initialize enhancer - THIS IS YOUR ENHANCER INSTANCE
 enhancer = LLM4DecompileEnhancer(
     use_local_model=(ENHANCEMENT_MODE == "local"),
     colab_url=COLAB_NGROK_URL if ENHANCEMENT_MODE == "colab" else None
@@ -175,8 +175,15 @@ def run_ghidra_analysis(enhance=False):
     upload_file = request.files["file"]
     filename = upload_file.filename
 
-    if not (filename.endswith(".o") or filename.endswith(".asm")):
-        return jsonify({"error": "Only .o or .asm files are supported"}), 400
+        # Accept actual binary formats that Ghidra can handle
+    supported_extensions = {'.o', '.elf', '.exe', '.so', '.dll', '.dylib', '.bin', '.rom', '.img'}
+    file_ext = os.path.splitext(filename)[1]
+    
+    if file_ext not in supported_extensions:
+        return jsonify({
+            "error": f"File type {file_ext} not supported by Ghidra",
+            "supported_formats": list(supported_extensions)
+        }), 400
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     run_id = f"ghidra_{'enhance' if enhance else 'decompile'}_{os.getpid()}_{timestamp}"
@@ -346,10 +353,12 @@ def enhance_existing_code():
     
     code = data["code"]
     filename = data.get("filename", "unknown.c")
+    mode = data.get("mode", "all")  # Optional: "all", "single", "func:NAME"
     
     try:
         print(f"✨ Enhancing existing code: {filename}")
-        enhanced_code = enhancer.enhance_code(code, filename)
+        # Use the enhancer instance defined at line 85 in your app.py
+        enhanced_code = enhancer.enhance_code(code, filename, mode=mode)
         score, label = calculate_severity_score(enhanced_code)
         
         # Get enhancement info
@@ -366,7 +375,65 @@ def enhance_existing_code():
     except Exception as e:
         print(f"❌ Enhancement failed: {e}")
         return jsonify({"error": str(e)}), 500
-
+# ==============================================================
+# Classification ROUTE
+# ==============================================================
+# In app.py - Simple classification endpoint
+@app.route("/classify", methods=["POST"])
+def classify_binary():
+    """Classify binary by importing classifier directly"""
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    
+    file = request.files["file"]
+    try:
+        import tempfile
+        import os
+        import sys
+        
+        # Add classifier to path
+        classifier_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "classifier")
+        sys.path.append(classifier_dir)
+        
+        # Import directly
+        from classifier.pipeline.language_inferencer import LanguageInferencer
+        
+        # Save file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.o') as tmp:
+            file.save(tmp.name)
+            temp_path = tmp.name
+        
+        # Run classification
+        model_path = os.path.join(classifier_dir, "models", "language_classifier.pkl")
+        inferencer = LanguageInferencer(model_path)
+        result = inferencer.analyze_binary(temp_path)
+        
+        # Clean up
+        os.unlink(temp_path)
+        
+        # Format response
+        c_prob = result.get('C', 0.5)
+        cpp_prob = result.get('C++', 0.5)
+        confidence = result.get('confidence', max(c_prob, cpp_prob))
+        language = "C++" if cpp_prob > c_prob else "C"
+        
+        return jsonify({
+            "language": language,
+            "confidence": confidence,
+            "c_prob": c_prob,
+            "cpp_prob": cpp_prob,
+            "method": "direct_import"
+        })
+        
+    except Exception as e:
+        print(f"Direct classification error: {e}")
+        return jsonify({
+            "error": str(e),
+            "language": "Unknown",
+            "confidence": 0.5,
+            "c_prob": 0.5,
+            "cpp_prob": 0.5
+        }), 500
 # ==============================================================
 # 🖥️ RUN SERVER
 # ==============================================================
@@ -388,6 +455,7 @@ if __name__ == "__main__":
     print("  - POST /ghidra_enhance   → Ghidra + LLM enhancement")
     print("  - POST /enhance_code     → Enhance existing code")
     print("  - GET  /status           → Server status")
+    print("  - POST /classify         → Language Classification")
     print("="*60)
     
     app.run(host="0.0.0.0", port=port, debug=False)

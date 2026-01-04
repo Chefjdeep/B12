@@ -1,7 +1,7 @@
 # =====================================
 # 🧠 B12 Project Git Ignore
 # =====================================
-
+/exp
 # --- Ghidra Files & Workspaces ---
 *.ghidra
 *.rep
