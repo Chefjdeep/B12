@@ -1,6 +1,3 @@
-Here's the updated README with the latest information about your enhancements and fixes:
-
-```markdown
 # B12 – Intelligent Decompilation and Malware Analysis using LLMs
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
