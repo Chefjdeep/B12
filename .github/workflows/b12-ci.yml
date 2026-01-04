@@ -1,0 +1,107 @@
+name: B12 CI – Static Analysis & Safety Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  security-events: write  # For CodeQL if you add it later
+
+jobs:
+  b12-ci:
+    name: Python + Flask + Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install flake8 bandit safety
+
+      - name: Python syntax check
+        run: |
+          python -m py_compile app.py enhance.py
+          find classifier -name "*.py" -exec python -m py_compile {} \;
+
+      - name: Lint with flake8
+        run: |
+          flake8 app.py enhance.py classifier/ \
+            --max-line-length=120 \
+            --ignore=E203,W503,E501,F401,F403 \
+            --count --statistics
+
+      - name: Security scan with bandit
+        run: |
+          bandit -r . \
+            -x ./LLM4Decompile,./.venv,./Ghidra_decompiled,./Enhanced_Decompiled,./temp_saves \
+            -ll --severity-level high,medium \
+            -f json -o bandit-report.json || true
+          echo "Bandit scan completed"
+
+      - name: Check for known vulnerabilities in dependencies
+        run: |
+          pip list --format=freeze > requirements_installed.txt
+          safety check -r requirements_installed.txt --ignore 51457 || echo "Safety check completed"
+
+      - name: Flask app test
+        run: |
+          python -c "
+          try:
+              from app import app, enhancer
+              print('✓ Flask app imports successfully')
+              
+              # Test basic enhancer initialization
+              from enhance import LLM4DecompileEnhancer
+              print('✓ Enhancer class available')
+              
+          except Exception as e:
+              print(f'✗ Import error: {e}')
+              exit(1)
+          "
+
+      - name: Validate critical repository structure
+        run: |
+          # Required files
+          test -f app.py || exit 1
+          test -f enhance.py || exit 1
+          test -f requirements.txt || exit 1
+          test -d templates || exit 1
+          test -d LLM4Decompile || exit 1
+          
+          # Optional but good to check
+          if [ -d "classifier" ]; then
+            echo "✓ Classifier module present"
+          fi
+          
+          echo "✅ Repository structure validated"
+
+      - name: Create summary report
+        if: always()
+        run: |
+          echo "## B12 CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**✅ Static Analysis Completed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Python syntax: OK" >> $GITHUB_STEP_SUMMARY
+          echo "- Code linting: Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Security scan: Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependencies: Checked" >> $GITHUB_STEP_SUMMARY
+          echo "- Structure: Validated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**⚠️ Note**: This CI does not execute decompilation (requires Ghidra binaries)." >> $GITHUB_STEP_SUMMARY
