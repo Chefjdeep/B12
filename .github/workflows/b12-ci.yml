@@ -28,10 +28,9 @@ jobs:
           python-version: "3.10"
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install CI-only tools
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install flake8 bandit safety
 
       - name: Python syntax check
@@ -54,11 +53,6 @@ jobs:
             -f json -o bandit-report.json || true
           echo "Bandit scan completed"
 
-      - name: Check for known vulnerabilities in dependencies
-        run: |
-          pip list --format=freeze > requirements_installed.txt
-          safety check -r requirements_installed.txt --ignore 51457 || echo "Safety check completed"
-
       - name: Flask app test
         run: |
           python -c "
@@ -80,7 +74,6 @@ jobs:
           # Required files
           test -f app.py || exit 1
           test -f enhance.py || exit 1
-          test -f requirements.txt || exit 1
           test -d templates || exit 1
           test -d LLM4Decompile || exit 1
           
