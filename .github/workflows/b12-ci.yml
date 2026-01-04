@@ -31,7 +31,7 @@ jobs:
       - name: Install CI-only tools
         run: |
           python -m pip install --upgrade pip
-          pip install flask flake8 bandit security
+          pip install flask flask_cors flake8 torch bandit security
 
       - name: Python syntax check
         run: |
