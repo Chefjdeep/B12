@@ -1,6 +1,9 @@
 # =====================================
-# 🧠 B12 Project Git Ignore
+# B12 Project Git Ignore
 # =====================================
+temp_saves/
+Enhanced_Decompiled/
+Ghidra_decompiled/
 /exp
 # --- Ghidra Files & Workspaces ---
 *.ghidra

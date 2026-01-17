@@ -1,9 +1,8 @@
-# app.py - Main Flask App with Ghidra + Enhancement
-from flask import Flask, request, jsonify, render_template
+# app.py - Main Flask App with Ghidra + Heuristic Enhancement + Security Analysis
+from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
-from enhance import LLM4DecompileEnhancer
+from enhance import HeuristicEnhancer
 import requests
-import torch
 import os
 import subprocess
 import tempfile
@@ -11,28 +10,48 @@ import shutil
 import datetime
 import time
 import re
+import json
 
 # ==============================================================
-# 🧠 MODEL CONFIGURATION
+# GHIDRA CONFIGURATION
 # ==============================================================
-MODEL_PATH = "LLM4Binary/llm4decompile-1.3b-v1.5"
-DEVICE = "cuda" if torch.cuda.is_available() else "mps"
-
-# ==============================================================
-# ⚙️ GHIDRA CONFIGURATION
-# ==============================================================
-GHIDRA_PATH = "LLM4Decompile/ghidra/ghidra_11.0.3_PUBLIC/support/analyzeHeadless"
-GHIDRA_SCRIPT = "LLM4Decompile/ghidra/decompile.py"
+GHIDRA_PATH = "ghidra/ghidra_11.0.3_PUBLIC/support/analyzeHeadless"
+GHIDRA_SCRIPT = "ghidra/decompile.py"
 PROJECT_NAME = "tmp_ghidra_proj"
-TEMP_SAVE_DIR = "LLM4Decompile/temp_saves"
+TEMP_SAVE_DIR = "temp_saves"
 OUTPUT_DIR = "Ghidra_decompiled"
 ENHANCED_OUTPUT_DIR = "Enhanced_Decompiled"
 TIMEOUT = 120
+
+# ==============================================================
+# SECURITY ANALYSIS CONFIGURATION
+# ==============================================================
+SECURITY_API_URL = "http://127.0.0.1:5500/analyze"  # Your security analysis API
+
+# ==============================================================
+# SECURITY CATEGORIES FOR RADAR CHART
+# ==============================================================
+SECURITY_CATEGORIES = [
+    "DATA_EXFILTRATION",
+    "PERSISTENCE", 
+    "PRIVILEGE_ESCALATION",
+    "SURVEILLANCE",
+    "DESTRUCTIVE",
+    "EVASION",
+    "DENIAL_OF_SERVICE",
+    "CREDENTIAL_THEFT"
+]
 
 # Create directories
 os.makedirs(TEMP_SAVE_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(ENHANCED_OUTPUT_DIR, exist_ok=True)
+
+# Global variable for current Ghidra file
+current_ghidra_file = None
+
+# Initialize the enhancer globally
+enhancer = HeuristicEnhancer()
 
 def check_ghidra_environment():
     """Ensure Ghidra and Java are available"""
@@ -45,31 +64,14 @@ def check_ghidra_environment():
     return None
 
 # ==============================================================
-# 🌐 FLASK APP INITIALIZATION
+# FLASK APP INITIALIZATION
 # ==============================================================
 app = Flask(__name__, template_folder="templates")
+app.secret_key = os.urandom(24)  # For session management
 CORS(app)
 
-# ===============================
-# CONFIG: Enhancement Mode
-# ===============================
-# Choose one: "colab" or "local"
-ENHANCEMENT_MODE = "colab"  # Change to "local" if you want local model
-
-# Colab URL (for colab mode)
-COLAB_NGROK_URL = "https://joetta-colorimetric-audra.ngrok-free.dev/llm4decompile"
-
-# Initialize enhancer - THIS IS YOUR ENHANCER INSTANCE
-enhancer = LLM4DecompileEnhancer(
-    use_local_model=(ENHANCEMENT_MODE == "local"),
-    colab_url=COLAB_NGROK_URL if ENHANCEMENT_MODE == "colab" else None
-)
-
-print(f"\n🔧 Enhancement Mode: {ENHANCEMENT_MODE.upper()}")
-print(f"🔗 Colab URL: {COLAB_NGROK_URL if ENHANCEMENT_MODE == 'colab' else 'Not used'}\n")
-
 # ==============================================================
-# 🏠 ROUTES
+# ROUTES
 # ==============================================================
 
 @app.route("/")
@@ -82,74 +84,15 @@ def status():
     ghidra_status = check_ghidra_environment()
     return jsonify({
         "status": "running",
-        "enhancement_mode": ENHANCEMENT_MODE,
         "ghidra_available": ghidra_status is None,
         "ghidra_error": ghidra_status,
-        "colab_url": COLAB_NGROK_URL if ENHANCEMENT_MODE == "colab" else None,
-        "local_model": ENHANCEMENT_MODE == "local"
+        "security_api_configured": SECURITY_API_URL is not None,
+        "security_api_url": SECURITY_API_URL,
+        "categories": SECURITY_CATEGORIES
     })
 
 # ==============================================================
-# 🧠 LLM DECOMPILATION ROUTE
-# ==============================================================
-
-@app.route("/decompile", methods=["POST"])
-def decompile_llm():
-    """LLM-based decompilation for assembly files"""
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    asm_file = request.files["file"]
-    filename = asm_file.filename
-    file_bytes = asm_file.read()
-    
-    try:
-        asm_text = file_bytes.decode("utf-8", errors="ignore").strip()
-    except Exception:
-        asm_text = ""
-
-    if not file_bytes:
-        return jsonify({"error": "File is empty"}), 400
-
-    print(f"📜 LLM decompilation: {filename}")
-
-    # Create prompt for LLM4Decompile
-    prompt = f"# This is the assembly code:\n{asm_text}\n# What is the source code?\n"
-    
-    # Convert to bytes for API
-    file_bytes = prompt.encode('utf-8')
-    
-    try:
-        # Send to Colab API
-        files = {"file": (filename, file_bytes)}
-        response = requests.post(COLAB_NGROK_URL, files=files, timeout=120)
-        
-        if response.status_code == 200:
-            result = response.json()
-            decompiled_code = result.get("decompiled_code", "")
-            severity_score = result.get("severity", 0)
-        else:
-            decompiled_code = f"// API Error: {response.status_code}"
-            severity_score = 0
-    except Exception as e:
-        decompiled_code = f"// Error: {str(e)}"
-        severity_score = 0
-    
-    # Calculate severity if not provided
-    if severity_score == 0:
-        severity_score, severity_label = calculate_severity_score(decompiled_code)
-    else:
-        _, severity_label = calculate_severity_score(decompiled_code)
-    
-    return jsonify({
-        "decompiled_code": decompiled_code,
-        "severity_score": severity_score,
-        "severity_label": severity_label,
-        "method": "llm_colab"
-    })
-
-# ==============================================================
-# ⚙️ GHIDRA DECOMPILATION ROUTES
+# GHIDRA DECOMPILATION ROUTES
 # ==============================================================
 
 @app.route("/ghidra_decompile", methods=["POST"])
@@ -159,12 +102,13 @@ def ghidra_decompile():
 
 @app.route("/ghidra_enhance", methods=["POST"])
 def ghidra_enhance():
-    """Ghidra decompilation WITH LLM enhancement"""
+    """Ghidra decompilation WITH heuristic enhancement"""
     return run_ghidra_analysis(enhance=True)
 
 def run_ghidra_analysis(enhance=False):
     """Run Ghidra analysis with optional enhancement"""
-    # Check Ghidra environment
+    global current_ghidra_file
+    
     env_error = check_ghidra_environment()
     if env_error:
         return jsonify({"error": env_error}), 500
@@ -175,8 +119,7 @@ def run_ghidra_analysis(enhance=False):
     upload_file = request.files["file"]
     filename = upload_file.filename
 
-        # Accept actual binary formats that Ghidra can handle
-    supported_extensions = {'.o', '.elf', '.exe', '.so', '.dll', '.dylib', '.bin', '.rom', '.img'}
+    supported_extensions = {'.o', '.elf', '.exe', '.so', '.dll', '.dylib', '.bin', '.rom', '.img', '.c'}
     file_ext = os.path.splitext(filename)[1]
     
     if file_ext not in supported_extensions:
@@ -190,17 +133,14 @@ def run_ghidra_analysis(enhance=False):
     save_dir = os.path.join(TEMP_SAVE_DIR, run_id)
     os.makedirs(save_dir, exist_ok=True)
 
-    print(f"📦 Running Ghidra {'with enhancement' if enhance else ''} on: {filename}")
+    print(f"📦 Running Ghidra {'with heuristic enhancement' if enhance else ''} on: {filename}")
 
     try:
-        # Save uploaded file
         binary_path = os.path.join(save_dir, filename)
         upload_file.save(binary_path)
 
-        # Output path for Ghidra
         output_path = os.path.join(save_dir, f"{os.path.splitext(filename)[0]}_decompiled.c")
 
-        # Run Ghidra command
         command = [
             GHIDRA_PATH,
             save_dir,
@@ -215,15 +155,13 @@ def run_ghidra_analysis(enhance=False):
         result = subprocess.run(command, text=True, capture_output=True, timeout=TIMEOUT)
         ghidra_time = time.time() - start_time
 
-        # Check output
         if not os.path.exists(output_path):
-            print("⚠️ Ghidra stderr:", result.stderr[:500])
+            print("Ghidra stderr:", result.stderr[:500])
             return jsonify({
                 "error": "Ghidra did not produce output.",
                 "stderr": result.stderr[:500]
             }), 500
 
-        # Read Ghidra output
         with open(output_path, "r", encoding="utf-8", errors="ignore") as f:
             ghidra_code = f.read()
 
@@ -231,117 +169,321 @@ def run_ghidra_analysis(enhance=False):
         enhancement_time = 0
         enhancement_status = "not_requested"
         
-        # Apply enhancement if requested
         if enhance:
-            print("✨ Applying LLM4Decompile enhancement...")
+            print("✨ Applying heuristic enhancement...")
             enhancement_start = time.time()
             try:
-                enhanced_code = enhancer.enhance_code(ghidra_code, filename)
+                enhanced_code = enhancer.enhance_code_new(ghidra_code, filename)
                 enhancement_time = time.time() - enhancement_start
                 
-                if enhanced_code and enhanced_code != ghidra_code:
-                    ghidra_code = enhanced_code
+                if enhanced_code and enhanced_code != original_ghidra_code:
                     enhancement_status = "success"
-                    print(f"✅ Enhancement completed in {enhancement_time:.2f}s")
+                    ghidra_code = enhanced_code
+                    print(f"Heuristic enhancement completed in {enhancement_time:.2f}s")
                 else:
                     enhancement_status = "no_improvement"
-                    print("⚠️ No significant improvement")
+                    print("No significant improvement from heuristic enhancement")
             except Exception as e:
                 enhancement_status = "failed"
-                print(f"❌ Enhancement failed: {e}")
-
-        # Save outputs
-        ghidra_path = os.path.join(OUTPUT_DIR, f"{os.path.splitext(filename)[0]}_{timestamp}_ghidra.c")
+                print(f"❌ Heuristic enhancement failed: {e}")
+    
+        # Store the current Ghidra file path for security analysis
+        ghidra_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_ghidra.c"
+        current_ghidra_file = ghidra_filename
+        session['current_ghidra_file'] = current_ghidra_file
+        
+        ghidra_path = os.path.join(OUTPUT_DIR, ghidra_filename)
         with open(ghidra_path, "w", encoding="utf-8") as out_file:
             out_file.write(original_ghidra_code)
 
+        enhanced_path = None
         if enhancement_status == "success":
-            enhanced_path = os.path.join(ENHANCED_OUTPUT_DIR, f"{os.path.splitext(filename)[0]}_{timestamp}_enhanced.c")
+            enhanced_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_enhanced.c"
+            enhanced_path = os.path.join(ENHANCED_OUTPUT_DIR, enhanced_filename)
             with open(enhanced_path, "w", encoding="utf-8") as out_file:
                 out_file.write(ghidra_code)
 
-        # Calculate severity
-        severity_score, severity_label = calculate_severity_score(ghidra_code)
-        
-        # Get enhancement stats
+        # Get enhancement statistics
         enhancement_info = enhancer.get_enhancement_info(
             len(original_ghidra_code), 
             len(ghidra_code)
         )
 
-        print(f"✅ Analysis complete!")
+        print(f"Analysis complete!")
         print(f"   - Ghidra time: {ghidra_time:.2f}s")
         if enhancement_time > 0:
             print(f"   - Enhancement time: {enhancement_time:.2f}s")
-        print(f"   - Severity: {severity_label} ({severity_score}%)")
 
         return jsonify({
             "decompiled_code": ghidra_code,
-            "severity_score": severity_score,
-            "severity_label": severity_label,
-            "method": "ghidra_enhanced" if enhance else "ghidra_only",
+            "severity_score": 0,
+            "severity_label": "Unknown",
+            "method": "ghidra_heuristic_enhanced" if enhance else "ghidra_only",
             "enhancement_status": enhancement_status,
             "ghidra_time": round(ghidra_time, 2),
             "enhancement_time": round(enhancement_time, 2) if enhancement_time > 0 else 0,
             "enhancement_info": enhancement_info,
             "saved_files": {
                 "original": ghidra_path,
-                "enhanced": enhanced_path if enhancement_status == "success" else None
-            }
+                "enhanced": enhanced_path
+            },
+            "current_ghidra_file": current_ghidra_file
         })
 
     except subprocess.TimeoutExpired:
         return jsonify({"error": f"Ghidra decompilation timed out after {TIMEOUT}s"}), 504
     except Exception as e:
-        print("❌ Error:", str(e))
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
 
 # ==============================================================
-# 🛠️ HELPER FUNCTIONS
+# SECURITY ANALYSIS ROUTE
 # ==============================================================
 
-def calculate_severity_score(code):
-    """Calculate threat severity score"""
-    if not code:
-        return 0, "Low"
+@app.route("/security_analyze", methods=["POST"])
+def security_analyze():
+    """Run security analysis using remote Flask API - SENDS ENHANCED VERSION"""
+    global current_ghidra_file
     
-    lower_code = code.lower()
-    score = 0
+    if not current_ghidra_file:
+        current_ghidra_file = session.get('current_ghidra_file')
     
-    # Threat patterns
-    patterns = [
-        (["shell", "exec", "system(", "popen", "CreateProcess"], 40),
-        (["socket", "bind", "listen", "connect", "send", "recv"], 30),
-        (["malloc", "calloc", "realloc", "free", "VirtualAlloc"], 20),
-        (["strcpy", "strcat", "sprintf", "memcpy"], 25),
-        (["download", "wget", "curl", "upload"], 40),
-        (["encrypt", "decrypt", "crypt", "xor"], 35),
-        (["LoadLibrary", "GetProcAddress", "dlopen", "dlsym"], 30),
-    ]
+    if not current_ghidra_file:
+        return jsonify({"error": "No Ghidra file available. Run Ghidra analysis first."}), 400
     
-    for keywords, weight in patterns:
-        if any(keyword in lower_code for keyword in keywords):
-            score += weight
+    # MODIFIED: Look for enhanced file instead of original Ghidra file
+    # Get base filename without timestamp
+    base_name = current_ghidra_file.replace("_ghidra.c", "")
     
-    # Reduce score for safe patterns
-    if "printf" in lower_code or "cout" in lower_code:
-        score = max(0, score - 10)
-    if "main(" in lower_code:
-        score = max(0, score - 5)
+    # Look for enhanced file in Enhanced_Decompiled directory
+    enhanced_dir = "Enhanced_Decompiled"
+    enhanced_file = None
     
-    score = min(100, score)
+    print(f" [DEBUG] Looking for enhanced files matching: {base_name}*_enhanced.c")
     
-    if score < 30:
-        label = "Low"
-    elif score < 70:
-        label = "Medium"
+    # List all enhanced files
+    if os.path.exists(enhanced_dir):
+        all_files = os.listdir(enhanced_dir)
+        print(f" Files in {enhanced_dir}: {all_files}")
+        
+        # Find enhanced file matching the current Ghidra file
+        for f in all_files:
+            if f.startswith(base_name) and f.endswith("_enhanced.c"):
+                enhanced_file = f
+                break
+    
+    if enhanced_file:
+        file_path = os.path.join(enhanced_dir, enhanced_file)
+        print(f" Found enhanced file: {enhanced_file}")
     else:
-        label = "High"
+        # Fallback to original Ghidra file if no enhanced version exists
+        file_path = os.path.join("Ghidra_decompiled", current_ghidra_file)
+        print(f" No enhanced file found, using original: {current_ghidra_file}")
     
-    return score, label
-
+    print(f" File being sent: {os.path.basename(file_path)}")
+    print(f" Path: {file_path}")
+    print(f" File exists: {os.path.exists(file_path)}")
+    
+    if not os.path.exists(file_path):
+        return jsonify({"error": f"C file not found: {file_path}"}), 404
+    
+    if not SECURITY_API_URL:
+        return jsonify({"error": "Security analysis API not configured."}), 500
+    
+    print(f"Sending ENHANCED file to security API: {SECURITY_API_URL}")
+    print(f"File: {os.path.basename(file_path)}")
+    
+    try:
+        with open(file_path, 'rb') as f:
+            files = {'file': (os.path.basename(file_path), f, 'text/plain')}
+            
+            response = requests.post(
+                SECURITY_API_URL,
+                files=files,
+                timeout=180
+            )
+        
+        print(f"API Response Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            try:
+                result = response.json()
+                security_metrics = process_security_data(result)
+                
+                return jsonify({
+                    "terminal_output": f"Security analysis completed via remote API",
+                    "json_report": result,
+                    "security_metrics": security_metrics,
+                    "method": "remote_flask_api",
+                    "success": True,
+                    "file_analyzed": os.path.basename(file_path),  # Show which file was sent
+                    "is_enhanced": enhanced_file is not None,  # Flag if enhanced or original
+                    "api_endpoint": SECURITY_API_URL
+                })
+            except ValueError:
+                return jsonify({
+                    "terminal_output": response.text,
+                    "json_report": {"raw_response": response.text},
+                    "method": "remote_flask_api",
+                    "success": True,
+                    "file_analyzed": os.path.basename(file_path),
+                    "is_enhanced": enhanced_file is not None,
+                    "api_endpoint": SECURITY_API_URL
+                })
+        else:
+            error_msg = f"API returned error {response.status_code}"
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('error', error_msg)
+            except:
+                error_msg = response.text[:500] if response.text else error_msg
+            
+            print(f"API Error: {error_msg}")
+            return jsonify({
+                "error": f"Security analysis API failed: {error_msg}",
+                "status_code": response.status_code,
+                "api_endpoint": SECURITY_API_URL,
+                "success": False
+            }), 502
+            
+    except requests.exceptions.Timeout:
+        print("API timeout after 180 seconds")
+        return jsonify({
+            "error": "Security analysis API timeout after 180 seconds",
+            "api_endpoint": SECURITY_API_URL
+        }), 504
+    except requests.exceptions.ConnectionError as ce:
+        print(f"🔌 Connection error: {ce}")
+        return jsonify({
+            "error": f"Could not connect to security analysis API at {SECURITY_API_URL}",
+            "details": str(ce),
+            "suggestion": "Check if the remote Flask app is running on port 5000"
+        }), 503
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": f"Security analysis failed: {str(e)}",
+            "api_endpoint": SECURITY_API_URL
+        }), 500
+def process_security_data(security_result):
+    """Process security analysis results for radar chart and metrics"""
+    try:
+        functions = security_result.get('functions', [])
+        
+        # Map behavior categories to security categories
+        BEHAVIOR_TO_CATEGORY = {
+            'file_access': 'DATA_EXFILTRATION',
+            'memory': 'EVASION',
+            'network': 'DATA_EXFILTRATION',
+            'process': 'PRIVILEGE_ESCALATION',
+            'registry': 'PERSISTENCE',
+            'system': 'PRIVILEGE_ESCALATION',
+            'crypto': 'CREDENTIAL_THEFT',
+            'antidebug': 'EVASION',
+            'injection': 'PRIVILEGE_ESCALATION',
+            'persistence': 'PERSISTENCE',
+            'destructive': 'DESTRUCTIVE',
+            'surveillance': 'SURVEILLANCE',
+            'dos': 'DENIAL_OF_SERVICE'
+        }
+        
+        malicious_count = len([f for f in functions if f.get('classification', {}).get('malicious', False)])
+        total_functions = len(functions)
+        
+        category_scores = {}
+        for category in SECURITY_CATEGORIES:
+            category_scores[category] = 0
+        
+        # Process each function
+        for func in functions:
+            if func.get('classification', {}).get('malicious', False):
+                confidence = func.get('classification', {}).get('confidence', 0.5)
+                
+                # Extract security categories from behavioral_actions
+                behavioral_actions = func.get('classification', {}).get('behavioral_actions', [])
+                for action in behavioral_actions:
+                    behavior = action.get('behavior', '')
+                    if behavior in BEHAVIOR_TO_CATEGORY:
+                        category = BEHAVIOR_TO_CATEGORY[behavior]
+                        if category in category_scores:
+                            category_scores[category] += confidence * 100
+                
+                # Also check triggers
+                triggers = func.get('signals', {}).get('triggers', [])
+                for trigger in triggers:
+                    if trigger.get('type') == 'api_category':
+                        behavior = trigger.get('category', '')
+                        if behavior in BEHAVIOR_TO_CATEGORY:
+                            category = BEHAVIOR_TO_CATEGORY[behavior]
+                            if category in category_scores:
+                                count = trigger.get('count', 1)
+                                category_scores[category] += confidence * 20 * count
+        
+        # Normalize scores
+        normalized_scores = []
+        for category in SECURITY_CATEGORIES:
+            score = min(100, category_scores[category])
+            normalized_scores.append(score)
+        
+        # Calculate threat level
+        avg_score = sum(normalized_scores) / len(normalized_scores) if normalized_scores else 0
+        if avg_score > 70:
+            threat_level = "high"
+        elif avg_score > 30:
+            threat_level = "medium"
+        else:
+            threat_level = "low"
+        
+        # Calculate complexity
+        total_api_calls = sum(f.get('signals', {}).get('raw_counts', {}).get('total_api_calls', 0) for f in functions)
+        avg_api_calls = total_api_calls / total_functions if total_functions > 0 else 0
+        
+        if avg_api_calls > 10:
+            complexity = "High"
+        elif avg_api_calls > 5:
+            complexity = "Medium"
+        else:
+            complexity = "Low"
+        
+        return {
+            "radar_data": {
+                "labels": SECURITY_CATEGORIES,
+                "data": normalized_scores,
+                "threat_level": threat_level,
+                "avg_score": avg_score
+            },
+            "metrics": {
+                "malicious_functions": malicious_count,
+                "total_functions": total_functions,
+                "threat_percentage": round((malicious_count / total_functions * 100) if total_functions > 0 else 0),
+                "complexity": complexity,
+                "avg_api_calls": round(avg_api_calls, 1)
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error processing security data: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "radar_data": {
+                "labels": SECURITY_CATEGORIES,
+                "data": [0, 0, 0, 0, 0, 0, 0, 0],
+                "threat_level": "unknown",
+                "avg_score": 0
+            },
+            "metrics": {
+                "malicious_functions": 0,
+                "total_functions": 0,
+                "threat_percentage": 0,
+                "complexity": "Unknown",
+                "avg_api_calls": 0
+            }
+        }
 # ==============================================================
-# 🆕 DIRECT ENHANCEMENT ROUTE
+# DIRECT ENHANCEMENT ROUTE
 # ==============================================================
 
 @app.route("/enhance_code", methods=["POST"])
@@ -353,109 +495,129 @@ def enhance_existing_code():
     
     code = data["code"]
     filename = data.get("filename", "unknown.c")
-    mode = data.get("mode", "all")  # Optional: "all", "single", "func:NAME"
+    mode = data.get("mode", "all")
     
     try:
         print(f"✨ Enhancing existing code: {filename}")
-        # Use the enhancer instance defined at line 85 in your app.py
         enhanced_code = enhancer.enhance_code(code, filename, mode=mode)
-        score, label = calculate_severity_score(enhanced_code)
         
-        # Get enhancement info
         enhancement_info = enhancer.get_enhancement_info(len(code), len(enhanced_code))
         
         return jsonify({
             "enhanced_code": enhanced_code,
-            "severity_score": score,
-            "severity_label": label,
+            "severity_score": 0,
+            "severity_label": "Unknown",
             "enhancement_info": enhancement_info,
             "improved": enhanced_code != code
         })
         
     except Exception as e:
-        print(f"❌ Enhancement failed: {e}")
+        print(f"Enhancement failed: {e}")
         return jsonify({"error": str(e)}), 500
+
 # ==============================================================
-# Classification ROUTE
+# CLASSIFICATION ROUTE
 # ==============================================================
-# In app.py - Simple classification endpoint
+
 @app.route("/classify", methods=["POST"])
-def classify_binary():
-    """Classify binary by importing classifier directly"""
+def classify():
     if "file" not in request.files:
+        print("No file uploaded")
         return jsonify({"error": "No file uploaded"}), 400
-    
+
     file = request.files["file"]
+    tmp_path = None
+
     try:
-        import tempfile
-        import os
-        import sys
-        
-        # Add classifier to path
-        classifier_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "classifier")
-        sys.path.append(classifier_dir)
-        
-        # Import directly
-        from classifier.pipeline.language_inferencer import LanguageInferencer
-        
-        # Save file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.o') as tmp:
+        # Save uploaded binary temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".o") as tmp:
             file.save(tmp.name)
-            temp_path = tmp.name
-        
-        # Run classification
-        model_path = os.path.join(classifier_dir, "models", "language_classifier.pkl")
-        inferencer = LanguageInferencer(model_path)
-        result = inferencer.analyze_binary(temp_path)
-        
-        # Clean up
-        os.unlink(temp_path)
-        
-        # Format response
-        c_prob = result.get('C', 0.5)
-        cpp_prob = result.get('C++', 0.5)
-        confidence = result.get('confidence', max(c_prob, cpp_prob))
-        language = "C++" if cpp_prob > c_prob else "C"
-        
+            tmp_path = tmp.name
+
+        # Path to the classifier script
+        classifier_dir = os.path.join(os.path.dirname(__file__), "classifier")
+        script_path = os.path.join(classifier_dir, "predict_xgb.py")
+
+        # Execute classifier as a subprocess
+        result = subprocess.run(
+            ["python3", script_path, tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+
+        if result.returncode != 0:
+            print(result.stderr)
+            return jsonify({
+                "error": "Classifier execution failed",
+                "details": result.stderr
+            }), 500
+
+        # Parse JSON output from predict_xgb.py
+        output = json.loads(result.stdout.strip())
+
         return jsonify({
-            "language": language,
-            "confidence": confidence,
-            "c_prob": c_prob,
-            "cpp_prob": cpp_prob,
-            "method": "direct_import"
+            "language": output.get("language", "Unknown"),
+            "confidence": output.get("confidence", 0.0),
+            "method": "subprocess"
         })
-        
+
+    except subprocess.TimeoutExpired:
+        print("Classification timed out")
+        return jsonify({"error": "Classification timed out"}), 500
+
     except Exception as e:
-        print(f"Direct classification error: {e}")
-        return jsonify({
-            "error": str(e),
-            "language": "Unknown",
-            "confidence": 0.5,
-            "c_prob": 0.5,
-            "cpp_prob": 0.5
-        }), 500
+        print(f"Classification failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
 # ==============================================================
-# 🖥️ RUN SERVER
+# UTILITY ROUTES
+# ==============================================================
+
+@app.route("/get_current_file", methods=["GET"])
+def get_current_file():
+    """Get the current Ghidra file being analyzed"""
+    global current_ghidra_file
+    return jsonify({
+        "current_file": current_ghidra_file,
+        "exists": os.path.exists(os.path.join("Ghidra_decompiled", current_ghidra_file)) if current_ghidra_file else False
+    })
+
+# ==============================================================
+# RUN SERVER
 # ==============================================================
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     
     print("\n" + "="*60)
-    print("🚀 ML DECOMPILER SERVER")
+    print("DECOMPILER SERVER (Ghidra + Heuristic Enhancement)")
     print("="*60)
-    print(f"🌍 Server: http://0.0.0.0:{port}")
-    print(f"⚙️  Ghidra: {'Available' if check_ghidra_environment() is None else 'Not Available'}")
-    print(f"🧠 Enhancement: {ENHANCEMENT_MODE.upper()} mode")
-    print(f"📡 Colab URL: {COLAB_NGROK_URL if ENHANCEMENT_MODE == 'colab' else 'Not used'}")
+    print(f"Server: http://0.0.0.0:{port}")
+    
+    ghidra_status = check_ghidra_environment()
+    print(f"Ghidra: {'Available' if ghidra_status is None else 'Not Available'}")
+    if ghidra_status:
+        print(f"   Error: {ghidra_status}")
+    
+    print(f"Security Analysis: {'Configured' if SECURITY_API_URL else 'Not Configured'}")
+    if SECURITY_API_URL:
+        print(f"   Endpoint: {SECURITY_API_URL}")
+    
     print("="*60)
-    print("\n📋 Available Endpoints:")
-    print("  - POST /decompile        → LLM decompilation (Colab)")
-    print("  - POST /ghidra_decompile → Ghidra only")
-    print("  - POST /ghidra_enhance   → Ghidra + LLM enhancement")
+    print("\nAvailable Endpoints:")
+    print("  - POST /ghidra_decompile → Ghidra only decompilation")
+    print("  - POST /ghidra_enhance   → Ghidra + heuristic enhancement")
+    print("  - POST /security_analyze → Security Analysis with remote API")
     print("  - POST /enhance_code     → Enhance existing code")
-    print("  - GET  /status           → Server status")
     print("  - POST /classify         → Language Classification")
+    print("  - GET  /status           → Server status")
+    print("  - GET  /get_current_file → Get current analyzed file")
     print("="*60)
     
     app.run(host="0.0.0.0", port=port, debug=False)
