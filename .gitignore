@@ -6,6 +6,7 @@ Enhanced_Decompiled/
 Ghidra_decompiled/
 /exp
 # --- Ghidra Files & Workspaces ---
+ghidra/ghidra_11.0.3_PUBLIC
 ghidra/
 *.ghidra
 *.rep
