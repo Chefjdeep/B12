@@ -1,6 +1,7 @@
 # =====================================
 # B12 Project Git Ignore
 # =====================================
+samples/
 temp_saves/
 Enhanced_Decompiled/
 Ghidra_decompiled/
