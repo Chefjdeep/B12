@@ -1,6 +1,7 @@
 # =====================================
 # B12 Project Git Ignore
 # =====================================
+classifier/model_xgb.pkl
 samples/
 temp_saves/
 Enhanced_Decompiled/
