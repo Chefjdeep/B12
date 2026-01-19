@@ -4,6 +4,7 @@
 classifier/model_xgb.pkl
 samples/*
 temp_saves/*
+/temp_saves/
 Enhanced_Decompiled/*
 Ghidra_decompiled/*
 /exp
