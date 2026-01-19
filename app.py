@@ -133,7 +133,7 @@ def run_ghidra_analysis(enhance=False):
     save_dir = os.path.join(TEMP_SAVE_DIR, run_id)
     os.makedirs(save_dir, exist_ok=True)
 
-    print(f"📦 Running Ghidra {'with heuristic enhancement' if enhance else ''} on: {filename}")
+    print(f"Running Ghidra {'with heuristic enhancement' if enhance else ''} on: {filename}")
 
     try:
         binary_path = os.path.join(save_dir, filename)
@@ -150,7 +150,7 @@ def run_ghidra_analysis(enhance=False):
             "-deleteProject"
         ]
 
-        print("▶️ Running Ghidra...")
+        print("Running Ghidra...")
         start_time = time.time()
         result = subprocess.run(command, text=True, capture_output=True, timeout=TIMEOUT)
         ghidra_time = time.time() - start_time
@@ -540,7 +540,7 @@ def enhance_existing_code():
     mode = data.get("mode", "all")
     
     try:
-        print(f"✨ Enhancing existing code: {filename}")
+        print(f"Enhancing existing code: {filename}")
         enhanced_code = enhancer.enhance_code(code, filename, mode=mode)
         
         enhancement_info = enhancer.get_enhancement_info(len(code), len(enhanced_code))

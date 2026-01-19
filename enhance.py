@@ -105,7 +105,7 @@ class HeuristicEnhancer:
         # Step 8: Create final output
         final_code = self._create_ml_output(enhanced_code, filename)
         
-        print(f"✅ ML-ready enhancement complete")
+        print(f"ML-ready enhancement complete")
         return final_code
     
     def _clean_ghidra_artifacts(self, code: str) -> str:

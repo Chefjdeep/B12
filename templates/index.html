@@ -117,7 +117,7 @@
 				overflow-y: auto;
 				flex: 1;
 				min-width: 0;
-				/* display: flex;/ */
+				/* display: flex; */
 				flex-direction: column;
 			}
 
@@ -146,29 +146,54 @@
 				transition: all 0.3s ease;
 				word-wrap: break-word;
 				overflow-wrap: break-word;
+				position: relative;
 			}
 
+			/* Default State */
 			.upload-box:hover {
 				border-color: var(--primary);
 				background: rgba(59, 130, 246, 0.05);
 			}
 
+			/* Drag-Over State - SIMPLE HIGHLIGHT */
+			.upload-box.dragover {
+				border-color: var(--primary);
+				background: rgba(59, 130, 246, 0.1);
+			}
+
+			/* Uploading State */
+			.upload-box.uploading {
+				border-color: var(--primary);
+			}
+
+			.upload-box.uploading i {
+				animation: spin 1s linear infinite;
+			}
+
+			/* Invalid State (brief flash) */
+			.upload-box.invalid {
+				border-color: var(--danger);
+				background: rgba(239, 68, 68, 0.05);
+			}
+
 			.upload-box i {
 				font-size: 28px;
-				color: var(--primary);
 				margin-bottom: 8px;
+				transition: all 0.3s ease;
 			}
 
 			.upload-box .upload-text {
 				font-size: 13px;
 				margin-bottom: 4px;
 				word-wrap: break-word;
+				transition: all 0.3s ease;
 			}
 
 			.upload-box .upload-subtext {
 				font-size: 10px;
 				color: var(--text-light);
 				word-wrap: break-word;
+				transition: all 0.3s ease;
 			}
 
 			/* File Info */
@@ -673,6 +698,12 @@
 			.legend-color.green {
 				background: var(--success);
 			}
+
+			/* Animations */
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
 		</style>
 	</head>
 	<body>
@@ -695,9 +726,9 @@
 					<div class="upload-section">
 						<div class="section-title">Upload File</div>
 						<div class="upload-box" id="uploadBox">
-							<i class="fas fa-cloud-upload-alt"></i>
-							<div class="upload-text">Drop file here or click to upload</div>
-							<div class="upload-subtext">.bin .exe .o .obj .elf .so .dll</div>
+							<i class="fas fa-cloud-upload-alt" id="uploadIcon"></i>
+							<div class="upload-text" id="uploadText">Drop file here or click to upload</div>
+							<div class="upload-subtext" id="uploadSubtext">.bin .exe .o .obj .elf .so .dll</div>
 						</div>
 
 						<div class="file-info" id="fileInfo">
@@ -877,6 +908,9 @@
 		<script>
 			// DOM Elements
 			const uploadBox = document.getElementById("uploadBox");
+			const uploadIcon = document.getElementById("uploadIcon");
+			const uploadText = document.getElementById("uploadText");
+			const uploadSubtext = document.getElementById("uploadSubtext");
 			const fileInfo = document.getElementById("fileInfo");
 			const fileName = document.getElementById("fileName");
 			const fileSize = document.getElementById("fileSize");
@@ -923,9 +957,88 @@
 				"CREDENTIAL_THEFT",
 			];
 
+			// Supported file extensions
+			const SUPPORTED_EXTENSIONS = ['.bin', '.exe', '.o', '.obj', '.elf', '.so', '.dll'];
+
+			// ==================== DRAG & DROP IMPLEMENTATION ====================
+
+			// Prevent default drag behaviors
+			['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+				uploadBox.addEventListener(eventName, preventDefaults, false);
+			});
+
+			function preventDefaults(e) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+
+			// Simple highlight - NO VALIDATION during drag
+			['dragenter', 'dragover'].forEach(eventName => {
+				uploadBox.addEventListener(eventName, highlight, false);
+			});
+
+			['dragleave', 'drop'].forEach(eventName => {
+				uploadBox.addEventListener(eventName, unhighlight, false);
+			});
+
+			function highlight(e) {
+				uploadBox.classList.add('dragover');
+				uploadText.textContent = 'Drop to upload';
+				uploadSubtext.textContent = 'Release file here';
+			}
+
+			function unhighlight(e) {
+				uploadBox.classList.remove('dragover');
+				uploadText.textContent = 'Drop file here or click to upload';
+				uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll';
+			}
+
+			// Handle dropped files
+			uploadBox.addEventListener('drop', handleDrop, false);
+
+			function handleDrop(e) {
+				const dt = e.dataTransfer;
+				const files = dt.files;
+				
+				if (files.length > 0) {
+					// Take the first file only
+					const file = files[0];
+					
+					// Check if file type is supported (REAL validation here)
+					if (isFileTypeSupported(file.name)) {
+						// Show uploading state
+						uploadBox.classList.add('uploading');
+						uploadText.textContent = 'Uploading...';
+						uploadSubtext.textContent = 'Processing file';
+						uploadIcon.className = 'fas fa-spinner';
+						
+						// Process immediately
+						handleFileUpload(file);
+					} else {
+						// Show brief error flash
+						uploadBox.classList.add('invalid');
+						setTimeout(() => {
+							uploadBox.classList.remove('invalid');
+						}, 1000);
+						
+						showError(
+							"Unsupported File Type",
+							`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll`
+						);
+					}
+				}
+			}
+
+			// Check if file type is supported
+			function isFileTypeSupported(filename) {
+				if (!filename || filename.indexOf('.') === -1) return false;
+				const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+				return SUPPORTED_EXTENSIONS.includes(extension);
+			}
+
 			// ==================== EVENT LISTENERS ====================
 
-			// Upload box click
+			// Upload box click (existing functionality)
 			uploadBox.addEventListener("click", () => {
 				const input = document.createElement("input");
 				input.type = "file";
@@ -1004,6 +1117,15 @@
 
 			// Handle file upload
 			function handleFileUpload(file) {
+				// Validate file type before proceeding
+				if (!isFileTypeSupported(file.name)) {
+					showError(
+						"Unsupported File Type",
+						`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll`
+					);
+					return; // Exit without processing
+				}
+				
 				currentFile = file;
 
 				// Update file info
@@ -1047,6 +1169,12 @@
 						showNotification(
 							"File uploaded successfully. Language classification in progress."
 						);
+						
+						// Reset upload box UI
+						uploadBox.classList.remove('uploading');
+						uploadText.textContent = 'Drop file here or click to upload';
+						uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll';
+						uploadIcon.className = 'fas fa-cloud-upload-alt';
 					};
 
 					if (file.name.endsWith(".o") || file.name.endsWith(".obj")) {
@@ -1089,7 +1217,6 @@
 					}
 				} catch (error) {
 					console.log("Language classification failed:", error);
-					// Don't show error modal for classification failure
 				}
 			}
 
@@ -1221,54 +1348,44 @@
 
 			// Show specific view
 			function showView(view) {
-				// Hide watermark for all views first
 				ghidraWatermark.classList.remove("active");
 
 				switch (view) {
 					case "raw":
 						if (fileContent && currentFile) {
 							codeContent.textContent = getRawContentView();
-							statusReady.textContent =
-								"Raw Code view - File content displayed";
+							statusReady.textContent = "Raw Code view - File content displayed";
 						} else {
 							codeContent.textContent = getRawView();
 							statusReady.textContent = "Raw Code view - No file uploaded";
 						}
 						break;
 					case "ghidra":
-						// Show watermark for Ghidra view
 						ghidraWatermark.classList.add("active");
 
 						if (decompiledCode) {
 							codeContent.textContent = decompiledCode;
-							statusReady.textContent =
-								"Ghidra Output view - Decompilation complete";
+							statusReady.textContent = "Ghidra Output view - Decompilation complete";
 						} else if (currentFile) {
 							codeContent.textContent = getGhidraView();
-							statusReady.textContent =
-								"Ghidra Output view - Ready for analysis";
+							statusReady.textContent = "Ghidra Output view - Ready for analysis";
 						} else {
 							codeContent.textContent = getGhidraView();
-							statusReady.textContent =
-								"Ghidra Output view - Upload a file first";
+							statusReady.textContent = "Ghidra Output view - Upload a file first";
 						}
 						break;
 					case "heuristic":
-						// Show watermark for Heuristic Enhanced view
 						ghidraWatermark.classList.add("active");
 
 						if (enhancedCode) {
 							codeContent.textContent = enhancedCode;
-							statusReady.textContent =
-								"Heuristic Enhanced view - Enhancement complete";
+							statusReady.textContent = "Heuristic Enhanced view - Enhancement complete";
 						} else if (currentFile) {
 							codeContent.textContent = getHeuristicView();
-							statusReady.textContent =
-								"Heuristic Enhanced view - Ready for analysis";
+							statusReady.textContent = "Heuristic Enhanced view - Ready for analysis";
 						} else {
 							codeContent.textContent = getHeuristicView();
-							statusReady.textContent =
-								"Heuristic Enhanced view - Upload a file first";
+							statusReady.textContent = "Heuristic Enhanced view - Upload a file first";
 						}
 						break;
 					case "security":
@@ -1294,10 +1411,8 @@
 
 ${result.decompiled_code}`;
 
-				statusReady.textContent =
-					"Ghidra decompilation complete - Ready for further analysis";
+				statusReady.textContent = "Ghidra decompilation complete - Ready for further analysis";
 
-				// Update results with basic info
 				updateResults({
 					complexity: "Calculating...",
 					threat: "Pending",
@@ -1315,10 +1430,8 @@ ${result.decompiled_code}`;
 
 ${result.decompiled_code}`;
 
-				statusReady.textContent =
-					"Heuristic enhancement complete - Ready for security analysis";
+				statusReady.textContent = "Heuristic enhancement complete - Ready for security analysis";
 
-				// Update results with enhancement info
 				updateResults({
 					complexity: "Enhanced",
 					threat: "Pending",
@@ -1328,11 +1441,11 @@ ${result.decompiled_code}`;
 			}
 
 			// Display security result
-function displaySecurityResult(result) {
-    const metrics = result.security_metrics?.metrics || {};
-    const radar = result.security_metrics?.radar_data || {};
-    
-    let securityReport = `/* Security Analysis Report */
+			function displaySecurityResult(result) {
+				const metrics = result.security_metrics?.metrics || {};
+				const radar = result.security_metrics?.radar_data || {};
+				
+				let securityReport = `/* Security Analysis Report */
 /* File: ${result.file_analyzed || currentFile.name} */
 /* Analysis Time: ${new Date().toLocaleString()} */
 
@@ -1345,54 +1458,51 @@ SUMMARY:
 DETAILED FINDINGS:
 ==================`;
 
-    if (result.json_report?.functions) {
-        // CHANGE: Process ALL functions, not just malicious
-        const allFunctions = result.json_report.functions;
-        
-        allFunctions.forEach((func, index) => {
-            const isMalicious = func.classification?.malicious === true;
-            
-            securityReport += `\n\n${index + 1}. ${func.function}`;
-            securityReport += `\n   Status: ${isMalicious ? 'MALICIOUS' : 'BENIGN'}`;
-            securityReport += `\n   Confidence: ${Math.round((func.classification?.confidence || 0) * 100)}%`;
-            securityReport += `\n   Explanation: ${func.classification?.explanation || 'No explanation provided'}`;
-            
-            // Show behavioral actions (if any)
-            const behaviors = func.classification?.behavioral_actions || [];
-            if (behaviors.length > 0) {
-                securityReport += `\n   Detected Behaviors:`;
-                behaviors.forEach(action => {
-                    securityReport += `\n     - ${action.behavior}: ${action.apis?.join(', ') || 'No APIs'} (${action.reason || 'No reason'})`;
-                });
-            }
-            
-            // Show triggers
-            const triggers = func.signals?.triggers || [];
-            if (triggers.length > 0) {
-                securityReport += `\n   Security Signals:`;
-                triggers.forEach(trigger => {
-                    if (trigger.type === 'api_category') {
-                        securityReport += `\n     - ${trigger.category}: ${trigger.count || 1} occurrence(s)`;
-                    }
-                });
-            }
-            
-            // Show raw counts
-            const raw_counts = func.signals?.raw_counts || {};
-            if (Object.keys(raw_counts).length > 0) {
-                securityReport += `\n   Raw Counts:`;
-                for (const [key, value] of Object.entries(raw_counts)) {
-                    if (value > 0) {
-                        securityReport += `\n     - ${key}: ${value}`;
-                    }
-                }
-            }
-        });
-    }
+				if (result.json_report?.functions) {
+					const allFunctions = result.json_report.functions;
+					
+					allFunctions.forEach((func, index) => {
+						const isMalicious = func.classification?.malicious === true;
+						
+						securityReport += `\n\n${index + 1}. ${func.function}`;
+						securityReport += `\n   Status: ${isMalicious ? 'MALICIOUS' : 'BENIGN'}`;
+						securityReport += `\n   Confidence: ${Math.round((func.classification?.confidence || 0) * 100)}%`;
+						securityReport += `\n   Explanation: ${func.classification?.explanation || 'No explanation provided'}`;
+						
+						const behaviors = func.classification?.behavioral_actions || [];
+						if (behaviors.length > 0) {
+							securityReport += `\n   Detected Behaviors:`;
+							behaviors.forEach(action => {
+								securityReport += `\n     - ${action.behavior}: ${action.apis?.join(', ') || 'No APIs'} (${action.reason || 'No reason'})`;
+							});
+						}
+						
+						const triggers = func.signals?.triggers || [];
+						if (triggers.length > 0) {
+							securityReport += `\n   Security Signals:`;
+							triggers.forEach(trigger => {
+								if (trigger.type === 'api_category') {
+									securityReport += `\n     - ${trigger.category}: ${trigger.count || 1} occurrence(s)`;
+								}
+							});
+						}
+						
+						const raw_counts = func.signals?.raw_counts || {};
+						if (Object.keys(raw_counts).length > 0) {
+							securityReport += `\n   Raw Counts:`;
+							for (const [key, value] of Object.entries(raw_counts)) {
+								if (value > 0) {
+									securityReport += `\n     - ${key}: ${value}`;
+								}
+							}
+						}
+					});
+				}
 
-    codeContent.textContent = securityReport;
-    statusReady.textContent = "Security analysis complete - Threat radar updated";
-}
+				codeContent.textContent = securityReport;
+				statusReady.textContent = "Security analysis complete - Threat radar updated";
+			}
+
 			// Update radar from security data
 			function updateRadarFromSecurity(result) {
 				const radarData = result.security_metrics?.radar_data;
@@ -1425,33 +1535,25 @@ DETAILED FINDINGS:
 
 			// Update radar chart
 			function updateRadar(radarData) {
-				// Hide placeholder
 				radarPlaceholder.style.display = "none";
 
-				// Destroy existing chart if it exists
 				if (threatRadarChart) {
 					threatRadarChart.destroy();
 				}
 
-				// Update threat level indicator
-				threatLevel.textContent =
-					radarData.threatLevel.charAt(0).toUpperCase() +
-					radarData.threatLevel.slice(1);
+				threatLevel.textContent = radarData.threatLevel.charAt(0).toUpperCase() + radarData.threatLevel.slice(1);
 				threatLevel.className = "radar-threat-level " + radarData.threatLevel;
 
-				// Calculate average score for color
-				const avgScore =
-					radarData.data.reduce((a, b) => a + b, 0) / radarData.data.length;
+				const avgScore = radarData.data.reduce((a, b) => a + b, 0) / radarData.data.length;
 				let threatColor;
 				if (avgScore > 70) {
-					threatColor = "#ef4444"; // Red for high
+					threatColor = "#ef4444";
 				} else if (avgScore > 30) {
-					threatColor = "#f59e0b"; // Orange for medium
+					threatColor = "#f59e0b";
 				} else {
-					threatColor = "#10b981"; // Green for low
+					threatColor = "#10b981";
 				}
 
-				// Create radar chart
 				threatRadarChart = new Chart(radarCanvas, {
 					type: "radar",
 					data: {
@@ -1473,47 +1575,18 @@ DETAILED FINDINGS:
 					options: {
 						responsive: true,
 						maintainAspectRatio: false,
-						plugins: {
-							legend: {
-								display: false,
-							},
-							tooltip: {
-								callbacks: {
-									label: function (context) {
-										return `${context.label}: ${context.raw.toFixed(1)}% risk`;
-									},
-								},
-							},
-						},
+						plugins: { legend: { display: false } },
 						scales: {
 							r: {
-								angleLines: {
-									color: "rgba(0, 0, 0, 0.1)",
-								},
-								grid: {
-									color: "rgba(0, 0, 0, 0.1)",
-								},
-								pointLabels: {
-									font: {
-										size: 9,
-									},
-									color: "var(--text-light)",
-								},
-								ticks: {
-									display: false,
-									maxTicksLimit: 5,
-									beginAtZero: true,
-									max: 100,
-								},
+								angleLines: { color: "rgba(0, 0, 0, 0.1)" },
+								grid: { color: "rgba(0, 0, 0, 0.1)" },
+								pointLabels: { font: { size: 9 }, color: "var(--text-light)" },
+								ticks: { display: false, maxTicksLimit: 5, beginAtZero: true, max: 100 },
 								min: 0,
 								max: 100,
 							},
 						},
-						elements: {
-							line: {
-								tension: 0.4,
-							},
-						},
+						elements: { line: { tension: 0.4 } },
 					},
 				});
 			}
@@ -1533,72 +1606,26 @@ DETAILED FINDINGS:
 
 			// Update results panel
 			function updateResults(results) {
-				document
-					.getElementById("resultComplexity")
-					.querySelector(".result-value").textContent = results.complexity;
-				document
-					.getElementById("resultThreat")
-					.querySelector(".result-value").textContent = results.threat;
-				document
-					.getElementById("resultVulns")
-					.querySelector(".result-value").textContent = results.vulns;
-				document
-					.getElementById("resultSize")
-					.querySelector(".result-value").textContent = results.size;
+				document.getElementById("resultComplexity").querySelector(".result-value").textContent = results.complexity;
+				document.getElementById("resultThreat").querySelector(".result-value").textContent = results.threat;
+				document.getElementById("resultVulns").querySelector(".result-value").textContent = results.vulns;
+				document.getElementById("resultSize").querySelector(".result-value").textContent = results.size;
 
 				resultBoxes.forEach((box) => box.classList.add("active"));
 			}
 
-			// Get security recommendations
-			function getSecurityRecommendations(threatLevel, metrics) {
-				const recommendations = [];
-
-				if (threatLevel === "high") {
-					recommendations.push(
-						"• IMMEDIATE ACTION REQUIRED: Isolate the system"
-					);
-					recommendations.push("• Review all malicious functions identified");
-					recommendations.push("• Consider blocking execution of this binary");
-					recommendations.push("• Perform deeper static and dynamic analysis");
-				} else if (threatLevel === "medium") {
-					recommendations.push("• Review the identified security concerns");
-					recommendations.push("• Monitor for any suspicious activity");
-					recommendations.push("• Consider sandboxed execution if required");
-					recommendations.push("• Update to latest security patches");
-				} else {
-					recommendations.push("• No immediate action required");
-					recommendations.push("• Continue standard security monitoring");
-					recommendations.push("• Keep software updated");
-				}
-
-				if (metrics.malicious_functions > 0) {
-					recommendations.push(
-						`• Investigate ${metrics.malicious_functions} flagged function(s)`
-					);
-				}
-
-				return recommendations.join("\n");
-			}
-
 			// Export current view
 			function exportCurrentView() {
-				const blob = new Blob([codeContent.textContent], {
-					type: "text/plain",
-				});
+				const blob = new Blob([codeContent.textContent], { type: "text/plain" });
 				const url = URL.createObjectURL(blob);
 				const a = document.createElement("a");
 				a.href = url;
 
 				let filename = currentFile.name.replace(/\.[^/.]+$/, "");
-				if (currentView === "ghidra") {
-					filename += "_ghidra";
-				} else if (currentView === "heuristic") {
-					filename += "_enhanced";
-				} else if (currentView === "security") {
-					filename += "_security";
-				} else {
-					filename += "_raw";
-				}
+				if (currentView === "ghidra") filename += "_ghidra";
+				else if (currentView === "heuristic") filename += "_enhanced";
+				else if (currentView === "security") filename += "_security";
+				else filename += "_raw";
 				filename += ".txt";
 
 				a.download = filename;
@@ -1613,7 +1640,6 @@ DETAILED FINDINGS:
 				progressFill.style.width = "0%";
 
 				if (duration === 0) {
-					// Indeterminate progress
 					progressFill.style.width = "30%";
 					progressFill.style.animation = "pulse 2s infinite";
 					return;
@@ -1673,21 +1699,14 @@ DETAILED FINDINGS:
 				`;
 				document.body.appendChild(notification);
 
-				setTimeout(() => {
-					notification.remove();
-				}, 3000);
+				setTimeout(() => notification.remove(), 3000);
 			}
 
 			// Get raw content view
 			function getRawContentView() {
-				if (!currentFile || !fileContent) {
-					return "No file content available";
-				}
+				if (!currentFile || !fileContent) return "No file content available";
 
-				if (
-					currentFile.name.endsWith(".o") ||
-					currentFile.name.endsWith(".obj")
-				) {
+				if (currentFile.name.endsWith(".o") || currentFile.name.endsWith(".obj")) {
 					return `Raw File Content - ${currentFile.name}
 Size: ${formatFileSize(currentFile.size)}
 Format: Object File
@@ -1709,20 +1728,15 @@ Hex Dump (first 1024 bytes):\n`;
 								if (i + j < bytes.length) {
 									const byte = bytes[i + j];
 									hex += byte.toString(16).padStart(2, "0") + " ";
-									ascii +=
-										byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ".";
+									ascii += byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ".";
 								} else {
 									hex += "   ";
 								}
 							}
-							hexView += `${i
-								.toString(16)
-								.padStart(8, "0")}: ${hex} ${ascii}\n`;
+							hexView += `${i.toString(16).padStart(8, "0")}: ${hex} ${ascii}\n`;
 						}
 						if (currentFile.size > 1024) {
-							hexView += `\n... (${
-								currentFile.size - 1024
-							} more bytes truncated)`;
+							hexView += `\n... (${currentFile.size - 1024} more bytes truncated)`;
 						}
 					}
 
@@ -1774,22 +1788,9 @@ Note: Requires Ghidra decompilation first.`;
 				return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 			}
 
-			// Add CSS animation for indeterminate progress
-			const style = document.createElement("style");
-			style.textContent = `
-				@keyframes pulse {
-					0% { width: 30%; }
-					50% { width: 70%; }
-					100% { width: 30%; }
-				}
-			`;
-			document.head.appendChild(style);
-
 			// Initialize
 			document.addEventListener("DOMContentLoaded", () => {
-				console.log(
-					"DeMa-AI Analysis Platform loaded with real API integration"
-				);
+				console.log("DeMa-AI Analysis Platform loaded with simplified drag & drop");
 			});
 		</script>
 	</body>
