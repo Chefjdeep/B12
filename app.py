@@ -374,20 +374,62 @@ def process_security_data(security_result):
         
         # Map behavior categories to security categories
         BEHAVIOR_TO_CATEGORY = {
-            'file_access': 'DATA_EXFILTRATION',
-            'memory': 'EVASION',
-            'network': 'DATA_EXFILTRATION',
-            'process': 'PRIVILEGE_ESCALATION',
-            'registry': 'PERSISTENCE',
-            'system': 'PRIVILEGE_ESCALATION',
-            'crypto': 'CREDENTIAL_THEFT',
-            'antidebug': 'EVASION',
-            'injection': 'PRIVILEGE_ESCALATION',
-            'persistence': 'PERSISTENCE',
-            'destructive': 'DESTRUCTIVE',
-            'surveillance': 'SURVEILLANCE',
-            'dos': 'DENIAL_OF_SERVICE'
-        }
+    'file_access': 'DATA_EXFILTRATION',
+    'memory': 'EVASION',
+    
+    'network': 'DATA_EXFILTRATION',
+    'process': 'PRIVILEGE_ESCALATION',
+    'persistence': 'PERSISTENCE',
+    'privilege': 'PRIVILEGE_ESCALATION',
+    'surveillance': 'SURVEILLANCE',
+    'evasion': 'EVASION',
+    'destructive': 'DESTRUCTIVE',
+    'dos': 'DENIAL_OF_SERVICE',
+    'credential': 'CREDENTIAL_THEFT',
+    
+    # From his sensitive_apis categories
+    'file_access': 'DATA_EXFILTRATION',          
+    'network': 'DATA_EXFILTRATION',              
+    'process': 'PRIVILEGE_ESCALATION',           
+    'memory': 'EVASION',                         
+    'persistence': 'PERSISTENCE',                
+    'privilege': 'PRIVILEGE_ESCALATION',         
+    'surveillance': 'SURVEILLANCE',              
+    'evasion': 'EVASION',                        
+    
+    # From malicious_actions indicators 
+    'file_access': 'DATA_EXFILTRATION',          
+    'network_communication': 'DATA_EXFILTRATION',
+    'sensitive_data_access': 'DATA_EXFILTRATION',
+    
+    'startup_modification': 'PERSISTENCE',
+    'cron_job_addition': 'PERSISTENCE',
+    'service_installation': 'PERSISTENCE',
+    
+    'setuid_misuse': 'PRIVILEGE_ESCALATION',
+    'passwd_modification': 'PRIVILEGE_ESCALATION',
+    'sudo_exploitation': 'PRIVILEGE_ESCALATION',
+    
+    'keylogging': 'SURVEILLANCE',
+    'screenshot_capture': 'SURVEILLANCE',
+    'process_enumeration': 'SURVEILLANCE',
+    'network_service': 'SURVEILLANCE',
+    
+    'recursive_deletion': 'DESTRUCTIVE',
+    'disk_wiping': 'DESTRUCTIVE',
+    'fork_bomb': 'DESTRUCTIVE',
+    
+    'anti_debugging': 'EVASION',
+    'vm_detection': 'EVASION',
+    'code_obfuscation': 'EVASION',
+    
+    'uncontrolled_execution': 'DENIAL_OF_SERVICE',
+    'dangerous_api_combination': 'DENIAL_OF_SERVICE',
+    
+    'shadow_read': 'CREDENTIAL_THEFT',
+    'password': 'CREDENTIAL_THEFT',
+    'keylog': 'CREDENTIAL_THEFT'
+}
         
         malicious_count = len([f for f in functions if f.get('classification', {}).get('malicious', False)])
         total_functions = len(functions)
