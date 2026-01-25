@@ -26,7 +26,7 @@ TIMEOUT = 120
 # ==============================================================
 # SECURITY ANALYSIS CONFIGURATION
 # ==============================================================
-SECURITY_API_URL = "http://127.0.0.1:5500/analyze"  # Your security analysis API
+SECURITY_API_URL = "http://10.208.53.78:5500/analyze"  # Your security analysis API
 
 # ==============================================================
 # SECURITY CATEGORIES FOR RADAR CHART
@@ -367,106 +367,148 @@ def security_analyze():
             "error": f"Security analysis failed: {str(e)}",
             "api_endpoint": SECURITY_API_URL
         }), 500
+
 def process_security_data(security_result):
-    """Process security analysis results for radar chart and metrics"""
+    """Process security analysis results for threat bars and metrics"""
     try:
         functions = security_result.get('functions', [])
         
-        # Map behavior categories to security categories
+        # Map behavior categories to security categories - COMPREHENSIVE VERSION
         BEHAVIOR_TO_CATEGORY = {
-    'file_access': 'DATA_EXFILTRATION',
-    'memory': 'EVASION',
-    
-    'network': 'DATA_EXFILTRATION',
-    'process': 'PRIVILEGE_ESCALATION',
-    'persistence': 'PERSISTENCE',
-    'privilege': 'PRIVILEGE_ESCALATION',
-    'surveillance': 'SURVEILLANCE',
-    'evasion': 'EVASION',
-    'destructive': 'DESTRUCTIVE',
-    'dos': 'DENIAL_OF_SERVICE',
-    'credential': 'CREDENTIAL_THEFT',
-    
-    # From his sensitive_apis categories
-    'file_access': 'DATA_EXFILTRATION',          
-    'network': 'DATA_EXFILTRATION',              
-    'process': 'PRIVILEGE_ESCALATION',           
-    'memory': 'EVASION',                         
-    'persistence': 'PERSISTENCE',                
-    'privilege': 'PRIVILEGE_ESCALATION',         
-    'surveillance': 'SURVEILLANCE',              
-    'evasion': 'EVASION',                        
-    
-    # From malicious_actions indicators 
-    'file_access': 'DATA_EXFILTRATION',          
-    'network_communication': 'DATA_EXFILTRATION',
-    'sensitive_data_access': 'DATA_EXFILTRATION',
-    
-    'startup_modification': 'PERSISTENCE',
-    'cron_job_addition': 'PERSISTENCE',
-    'service_installation': 'PERSISTENCE',
-    
-    'setuid_misuse': 'PRIVILEGE_ESCALATION',
-    'passwd_modification': 'PRIVILEGE_ESCALATION',
-    'sudo_exploitation': 'PRIVILEGE_ESCALATION',
-    
-    'keylogging': 'SURVEILLANCE',
-    'screenshot_capture': 'SURVEILLANCE',
-    'process_enumeration': 'SURVEILLANCE',
-    'network_service': 'SURVEILLANCE',
-    
-    'recursive_deletion': 'DESTRUCTIVE',
-    'disk_wiping': 'DESTRUCTIVE',
-    'fork_bomb': 'DESTRUCTIVE',
-    
-    'anti_debugging': 'EVASION',
-    'vm_detection': 'EVASION',
-    'code_obfuscation': 'EVASION',
-    
-    'uncontrolled_execution': 'DENIAL_OF_SERVICE',
-    'dangerous_api_combination': 'DENIAL_OF_SERVICE',
-    
-    'shadow_read': 'CREDENTIAL_THEFT',
-    'password': 'CREDENTIAL_THEFT',
-    'keylog': 'CREDENTIAL_THEFT'
-}
+            # File/Network behaviors -> DATA_EXFILTRATION
+            'file_access': 'DATA_EXFILTRATION',
+            'network': 'DATA_EXFILTRATION',
+            'socket': 'DATA_EXFILTRATION',
+            'send': 'DATA_EXFILTRATION',
+            'recv': 'DATA_EXFILTRATION',
+            'fopen': 'DATA_EXFILTRATION',
+            'fwrite': 'DATA_EXFILTRATION',
+            'fread': 'DATA_EXFILTRATION',
+            'network_communication': 'DATA_EXFILTRATION',
+            'sensitive_data_access': 'DATA_EXFILTRATION',
+            
+            # Persistence behaviors
+            'persistence': 'PERSISTENCE',
+            'startup_modification': 'PERSISTENCE',
+            'cron_job_addition': 'PERSISTENCE',
+            'service_installation': 'PERSISTENCE',
+            
+            # Privilege escalation behaviors
+            'privilege': 'PRIVILEGE_ESCALATION',
+            'setuid_misuse': 'PRIVILEGE_ESCALATION',
+            'process': 'PRIVILEGE_ESCALATION',
+            'execve': 'PRIVILEGE_ESCALATION',
+            'system': 'PRIVILEGE_ESCALATION',
+            'chmod': 'PRIVILEGE_ESCALATION',
+            'setuid': 'PRIVILEGE_ESCALATION',
+            
+            # Surveillance behaviors
+            'surveillance': 'SURVEILLANCE',
+            'process_enumeration': 'SURVEILLANCE',
+            'keylogging': 'SURVEILLANCE',
+            'opendir': 'SURVEILLANCE',
+            'readdir': 'SURVEILLANCE',
+            
+            # Destructive behaviors
+            'destructive': 'DESTRUCTIVE',
+            'disk_wiping': 'DESTRUCTIVE',
+            'recursive_deletion': 'DESTRUCTIVE',
+            'remove': 'DESTRUCTIVE',
+            'unlink': 'DESTRUCTIVE',
+            
+            # Evasion behaviors
+            'evasion': 'EVASION',
+            'anti_debugging': 'EVASION',
+            'vm_detection': 'EVASION',
+            'code_obfuscation': 'EVASION',
+            'ptrace': 'EVASION',
+            'memory': 'EVASION',
+            
+            # Denial of Service behaviors
+            'dos': 'DENIAL_OF_SERVICE',
+            'fork_bomb': 'DENIAL_OF_SERVICE',
+            'uncontrolled_execution': 'DENIAL_OF_SERVICE',
+            
+            # Credential theft behaviors
+            'credential': 'CREDENTIAL_THEFT',
+            'shadow_read': 'CREDENTIAL_THEFT',
+            'password_access': 'CREDENTIAL_THEFT',
+            'credential_access': 'CREDENTIAL_THEFT',
+        }
         
         malicious_count = len([f for f in functions if f.get('classification', {}).get('malicious', False)])
         total_functions = len(functions)
         
+        # Initialize scores and contributing functions
         category_scores = {}
+        contributing_functions = {}
         for category in SECURITY_CATEGORIES:
             category_scores[category] = 0
+            contributing_functions[category] = []
         
         # Process each function
         for func in functions:
             if func.get('classification', {}).get('malicious', False):
                 confidence = func.get('classification', {}).get('confidence', 0.5)
+                score_base = confidence * 100  # Convert to 0-100 scale
+                func_name = func.get('function', 'unknown')
                 
-                # Extract security categories from behavioral_actions
+                # Track which categories this function contributes to
+                contributed_categories = set()
+                
+                # 1. Check behavioral actions (highest weight)
                 behavioral_actions = func.get('classification', {}).get('behavioral_actions', [])
                 for action in behavioral_actions:
                     behavior = action.get('behavior', '')
                     if behavior in BEHAVIOR_TO_CATEGORY:
                         category = BEHAVIOR_TO_CATEGORY[behavior]
                         if category in category_scores:
-                            category_scores[category] += confidence * 100
+                            # Behavioral actions get full weight, but only once per category per function
+                            if category not in contributed_categories:
+                                category_scores[category] += score_base
+                                contributed_categories.add(category)
+                                # Track contributing function
+                                contributing_functions[category].append({
+                                    'name': func_name,
+                                    'confidence': round(confidence * 100)
+                                })
                 
-                # Also check triggers
+                # 2. Check triggers (medium weight) - only if category not already covered
                 triggers = func.get('signals', {}).get('triggers', [])
                 for trigger in triggers:
                     if trigger.get('type') == 'api_category':
                         behavior = trigger.get('category', '')
                         if behavior in BEHAVIOR_TO_CATEGORY:
                             category = BEHAVIOR_TO_CATEGORY[behavior]
-                            if category in category_scores:
+                            if category in category_scores and category not in contributed_categories:
                                 count = trigger.get('count', 1)
-                                category_scores[category] += confidence * 20 * count
-        
-        # Normalize scores
+                                # Triggers get 50% weight
+                                category_scores[category] += score_base * 0.5 * count
+                                contributed_categories.add(category)
+                                # Track contributing function
+                                contributing_functions[category].append({
+                                    'name': func_name,
+                                    'confidence': round(confidence * 100 * 0.5)  # Reduced confidence for triggers
+                                })
+                
+                # 3. Check explanation text for category mentions (low weight)
+                explanation = func.get('classification', {}).get('explanation', '')
+                for category in SECURITY_CATEGORIES:
+                    if category in explanation and category not in contributed_categories:
+                        # Category mentioned in explanation gets 30% weight
+                        category_scores[category] += score_base * 0.3
+                        contributed_categories.add(category)
+                        # Track contributing function
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.3)  # Reduced confidence for text mentions
+                        })
+
+        # SIMPLE FIX: Cap scores at 100, ensure minimum of 0
         normalized_scores = []
         for category in SECURITY_CATEGORIES:
-            score = min(100, category_scores[category])
+            # Cap at 100, ensure minimum of 0
+            score = min(100, max(0, category_scores[category]))
             normalized_scores.append(score)
         
         # Calculate threat level
@@ -475,8 +517,10 @@ def process_security_data(security_result):
             threat_level = "high"
         elif avg_score > 30:
             threat_level = "medium"
-        else:
+        elif avg_score > 0:
             threat_level = "low"
+        else:
+            threat_level = "unknown"
         
         # Calculate complexity
         total_api_calls = sum(f.get('signals', {}).get('raw_counts', {}).get('total_api_calls', 0) for f in functions)
@@ -489,12 +533,23 @@ def process_security_data(security_result):
         else:
             complexity = "Low"
         
+        # DEBUG: Print category scores to console
+        print("\n=== DEBUG: Threat Category Scores ===")
+        for i, category in enumerate(SECURITY_CATEGORIES):
+            print(f"{category}: {normalized_scores[i]:.1f}%")
+            if contributing_functions[category]:
+                print(f"  Contributing functions: {[f['name'] for f in contributing_functions[category]]}")
+        print(f"Average Score: {avg_score:.1f}%")
+        print(f"Threat Level: {threat_level}")
+        print("==================================\n")
+        
         return {
             "radar_data": {
                 "labels": SECURITY_CATEGORIES,
                 "data": normalized_scores,
                 "threat_level": threat_level,
-                "avg_score": avg_score
+                "avg_score": avg_score,
+                "contributing_functions": contributing_functions  # ADDED
             },
             "metrics": {
                 "malicious_functions": malicious_count,
@@ -509,12 +564,14 @@ def process_security_data(security_result):
         print(f"Error processing security data: {e}")
         import traceback
         traceback.print_exc()
+        # Return default/empty data instead of crashing
         return {
             "radar_data": {
                 "labels": SECURITY_CATEGORIES,
                 "data": [0, 0, 0, 0, 0, 0, 0, 0],
                 "threat_level": "unknown",
-                "avg_score": 0
+                "avg_score": 0,
+                "contributing_functions": {category: [] for category in SECURITY_CATEGORIES}
             },
             "metrics": {
                 "malicious_functions": 0,

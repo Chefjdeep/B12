@@ -8,8 +8,6 @@
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 		/>
-		<!-- Add Chart.js for radar chart -->
-		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 		<style>
 			:root {
 				--primary: #3b82f6;
@@ -26,6 +24,9 @@
 				--warning: #f59e0b;
 				--success: #10b981;
 				--info: #3b82f6;
+				--danger-light: rgba(239, 68, 68, 0.1);
+				--warning-light: rgba(245, 158, 11, 0.1);
+				--success-light: rgba(16, 185, 129, 0.1);
 			}
 
 			body {
@@ -267,8 +268,8 @@
 				text-overflow: ellipsis;
 			}
 
-			/* Radar Chart Container */
-			.radar-container {
+			/* Threat Bars Container - REPLACES RADAR */
+			.threat-bars-container {
 				margin-top: 20px;
 				flex: 1;
 				display: flex;
@@ -276,20 +277,20 @@
 				min-height: 250px;
 			}
 
-			.radar-header {
+			.threat-header {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
-				margin-bottom: 10px;
+				margin-bottom: 12px;
 			}
 
-			.radar-title {
+			.threat-title {
 				font-size: 13px;
 				font-weight: 600;
 				color: var(--text);
 			}
 
-			.radar-threat-level {
+			.threat-level {
 				font-size: 11px;
 				font-weight: 600;
 				padding: 3px 8px;
@@ -298,35 +299,39 @@
 				border: 1px solid var(--border);
 			}
 
-			.radar-threat-level.high {
-				background: rgba(239, 68, 68, 0.1);
+			.threat-level.high {
+				background: var(--danger-light);
 				color: var(--danger);
 				border-color: rgba(239, 68, 68, 0.3);
 			}
 
-			.radar-threat-level.medium {
-				background: rgba(245, 158, 11, 0.1);
+			.threat-level.medium {
+				background: var(--warning-light);
 				color: var(--warning);
 				border-color: rgba(245, 158, 11, 0.3);
 			}
 
-			.radar-threat-level.low {
-				background: rgba(16, 185, 129, 0.1);
+			.threat-level.low {
+				background: var(--success-light);
 				color: var(--success);
 				border-color: rgba(16, 185, 129, 0.3);
 			}
 
-			.radar-chart-wrapper {
-				position: relative;
+			.threat-level.unknown {
+				color: var(--text-light);
+			}
+
+			.threat-bars-wrapper {
 				flex: 1;
 				min-height: 200px;
 				background: var(--surface);
 				border: 1px solid var(--border);
 				border-radius: 6px;
-				padding: 10px;
+				padding: 12px;
+				overflow-y: auto;
 			}
 
-			.radar-placeholder {
+			.threat-placeholder {
 				display: flex;
 				flex-direction: column;
 				align-items: center;
@@ -337,15 +342,138 @@
 				padding: 20px;
 			}
 
-			.radar-placeholder i {
+			.threat-placeholder i {
 				font-size: 32px;
 				margin-bottom: 10px;
 				color: var(--border);
 			}
 
-			.radar-placeholder-text {
+			.threat-placeholder-text {
 				font-size: 11px;
 				line-height: 1.4;
+			}
+
+			/* Threat Bar Styles */
+			.threat-bar {
+				margin-bottom: 10px;
+				position: relative;
+			}
+
+			.threat-bar-label {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 4px;
+				font-size: 11px;
+			}
+
+			.threat-name {
+				font-weight: 600;
+				color: var(--text);
+				text-transform: uppercase;
+				letter-spacing: 0.3px;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				flex-shrink: 0;
+				width: 120px;
+			}
+
+			.threat-percentage {
+				font-weight: 600;
+				color: var(--text-light);
+				flex-shrink: 0;
+				width: 40px;
+				text-align: right;
+			}
+
+			.threat-bar-track {
+				height: 8px;
+				background: var(--background);
+				border-radius: 4px;
+				overflow: hidden;
+				position: relative;
+				cursor: pointer;
+			}
+
+			.threat-bar-fill {
+				height: 100%;
+				border-radius: 4px;
+				transition: width 0.8s ease-out;
+				min-width: 8px; /* Ensures visibility even at 0% */
+				position: relative;
+			}
+
+			/* Color coding based on percentage */
+			.threat-bar-fill.high {
+				background: linear-gradient(90deg, var(--danger), #dc2626);
+			}
+
+			.threat-bar-fill.medium {
+				background: linear-gradient(90deg, var(--warning), #d97706);
+			}
+
+			.threat-bar-fill.low {
+				background: linear-gradient(90deg, var(--success), #059669);
+			}
+
+			.threat-bar-fill.none {
+				background: var(--border);
+			}
+
+			/* Pattern for empty bars */
+			.threat-bar-fill.empty {
+				background: repeating-linear-gradient(
+					45deg,
+					var(--border),
+					var(--border) 2px,
+					transparent 2px,
+					transparent 6px
+				);
+				width: 100% !important;
+			}
+
+			/* Tooltip Styles */
+			.threat-tooltip {
+				position: absolute;
+				background: var(--text);
+				color: white;
+				padding: 8px 12px;
+				border-radius: 6px;
+				font-size: 11px;
+				line-height: 1.4;
+				z-index: 1000;
+				white-space: nowrap;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+				pointer-events: none;
+				opacity: 0;
+				transition: opacity 0.2s;
+				max-width: 300px;
+			}
+
+			.threat-tooltip::after {
+				content: '';
+				position: absolute;
+				bottom: 100%;
+				left: 10px;
+				border-width: 6px;
+				border-style: solid;
+				border-color: transparent transparent var(--text) transparent;
+			}
+
+			.threat-tooltip.show {
+				opacity: 1;
+			}
+
+			.threat-tooltip strong {
+				display: block;
+				margin-bottom: 4px;
+				font-size: 12px;
+				color: white;
+			}
+
+			.threat-tooltip small {
+				color: #d1d5db;
+				font-size: 10px;
 			}
 
 			/* Code Panel - Right */
@@ -704,6 +832,26 @@
 				0% { transform: rotate(0deg); }
 				100% { transform: rotate(360deg); }
 			}
+
+			/* Responsive adjustments for threat bars */
+			@media (max-width: 1400px) {
+				.threat-name {
+					width: 100px;
+					font-size: 10px;
+				}
+				.threat-percentage {
+					font-size: 10px;
+				}
+			}
+
+			@media (max-height: 800px) {
+				.threat-bar {
+					margin-bottom: 8px;
+				}
+				.threat-bars-wrapper {
+					padding: 10px;
+				}
+			}
 		</style>
 	</head>
 	<body>
@@ -758,33 +906,33 @@
 						</div>
 					</div>
 
-					<!-- Radar Chart for Security Threats -->
-					<div class="radar-container">
-						<div class="radar-header">
-							<div class="radar-title">Threat Radar</div>
-							<div class="radar-threat-level" id="threatLevel">No Data</div>
+					<!-- Threat Bars - REPLACES RADAR CHART -->
+					<div class="threat-bars-container">
+						<div class="threat-header">
+							<div class="threat-title">Threat Analysis</div>
+							<div class="threat-level" id="threatLevel">No Data</div>
 						</div>
-						<div class="radar-chart-wrapper">
-							<canvas id="threatRadar"></canvas>
-							<div class="radar-placeholder" id="radarPlaceholder">
-								<i class="fas fa-radar"></i>
-								<div class="radar-placeholder-text">
-									Run security analysis to<br />display threat radar
+						<div class="threat-bars-wrapper" id="threatBarsWrapper">
+							<div class="threat-placeholder" id="threatPlaceholder">
+								<i class="fas fa-chart-bar"></i>
+								<div class="threat-placeholder-text">
+									Run security analysis to<br />display threat assessment
 								</div>
 							</div>
+							<!-- Threat bars will be dynamically inserted here -->
 						</div>
 						<div class="threat-legend">
 							<div class="legend-item">
 								<div class="legend-color red"></div>
-								<span>High Risk</span>
+								<span>High Risk (>70%)</span>
 							</div>
 							<div class="legend-item">
 								<div class="legend-color orange"></div>
-								<span>Medium Risk</span>
+								<span>Medium Risk (30-70%)</span>
 							</div>
 							<div class="legend-item">
 								<div class="legend-color green"></div>
-								<span>Low Risk</span>
+								<span>Low Risk (<30%)</span>
 							</div>
 						</div>
 					</div>
@@ -927,14 +1075,11 @@
 			const codeContent = document.getElementById("codeContent");
 			const ghidraWatermark = document.getElementById("ghidraWatermark");
 			const threatLevel = document.getElementById("threatLevel");
-			const radarPlaceholder = document.getElementById("radarPlaceholder");
+			const threatPlaceholder = document.getElementById("threatPlaceholder");
+			const threatBarsWrapper = document.getElementById("threatBarsWrapper");
 			const errorModal = document.getElementById("errorModal");
 			const modalTitle = document.getElementById("modalTitle");
 			const modalBody = document.getElementById("modalBody");
-
-			// Radar chart variables
-			let threatRadarChart = null;
-			const radarCanvas = document.getElementById("threatRadar");
 
 			// Current state
 			let currentFile = null;
@@ -974,11 +1119,11 @@
 
 			// Simple highlight - NO VALIDATION during drag
 			['dragenter', 'dragover'].forEach(eventName => {
-				uploadBox.addEventListener(eventName, highlight, false);
+					uploadBox.addEventListener(eventName, highlight, false);
 			});
 
 			['dragleave', 'drop'].forEach(eventName => {
-				uploadBox.addEventListener(eventName, unhighlight, false);
+					uploadBox.addEventListener(eventName, unhighlight, false);
 			});
 
 			function highlight(e) {
@@ -1151,8 +1296,8 @@
 							box.querySelector(".result-value").textContent = "—";
 						});
 
-						// Reset radar
-						resetRadar();
+						// Reset threat bars
+						resetThreatBars();
 
 						// Reset stored data
 						decompiledCode = null;
@@ -1268,7 +1413,7 @@
 						securityData = result;
 						showProgress("Processing security analysis...", 1000, () => {
 							displaySecurityResult(result);
-							updateRadarFromSecurity(result);
+							updateThreatBarsFromSecurity(result);
 							updateResultsFromSecurity(result);
 							showNotification("Security analysis completed successfully");
 						});
@@ -1440,7 +1585,7 @@ ${result.decompiled_code}`;
 				});
 			}
 
-			// Display security result
+			// Display security result - FIXED FOR RADAR
 			function displaySecurityResult(result) {
 				const metrics = result.security_metrics?.metrics || {};
 				const radar = result.security_metrics?.radar_data || {};
@@ -1454,8 +1599,18 @@ SUMMARY:
 • Total Functions Analyzed: ${metrics.total_functions || 0}
 • Malicious Functions: ${metrics.malicious_functions || 0}
 • Benign Functions: ${(metrics.total_functions || 0) - (metrics.malicious_functions || 0)}
+• Threat Level: ${radar.threat_level || "unknown"}`;
 
-DETAILED FINDINGS:
+				// Add threat percentages from radar data
+				if (radar.labels && radar.data) {
+					securityReport += `\n\nTHREAT CATEGORIES:`;
+					radar.labels.forEach((label, index) => {
+						const percentage = Math.round(radar.data[index] || 0);
+						securityReport += `\n• ${label.replace(/_/g, ' ')}: ${percentage}%`;
+					});
+				}
+
+				securityReport += `\n\nDETAILED FINDINGS:
 ==================`;
 
 				if (result.json_report?.functions) {
@@ -1500,22 +1655,177 @@ DETAILED FINDINGS:
 				}
 
 				codeContent.textContent = securityReport;
-				statusReady.textContent = "Security analysis complete - Threat radar updated";
+				statusReady.textContent = "Security analysis complete - Threat bars updated";
+
+				// Use the structured radar data from backend
+				if (radar.labels && radar.data && radar.data.length > 0) {
+					updateAllThreatBars({
+						labels: radar.labels,
+						data: radar.data,
+						threatLevel: radar.threat_level || "unknown",
+						contributingFunctions: radar.contributing_functions || {}
+					});
+				} else {
+					// If no radar data, show empty bars
+					resetThreatBars();
+				}
 			}
 
-			// Update radar from security data
-			function updateRadarFromSecurity(result) {
-				const radarData = result.security_metrics?.radar_data;
-				if (!radarData || !radarData.data || radarData.data.length === 0) {
-					resetRadar();
-					return;
+			// ==================== THREAT BARS FUNCTIONS ====================
+
+			// Create a single threat bar element with tooltip
+			function createThreatBar(category, percentage, contributingFunctions = []) {
+				// Determine threat level and color class
+				let threatClass, colorClass;
+				if (percentage >= 70) {
+					threatClass = "high";
+					colorClass = "high";
+				} else if (percentage >= 30) {
+					threatClass = "medium";
+					colorClass = "medium";
+				} else if (percentage > 0) {
+					threatClass = "low";
+					colorClass = "low";
+				} else {
+					threatClass = "none";
+					colorClass = "empty";
 				}
 
-				updateRadar({
-					labels: radarData.labels || SECURITY_CATEGORIES,
-					data: radarData.data,
-					threatLevel: radarData.threat_level || "unknown",
+				// Format category name for display
+				const displayName = category.replace(/_/g, ' ');
+
+				// Create tooltip content
+				let tooltipContent = `<strong>${displayName}: ${Math.round(percentage)}%</strong>`;
+				
+				if (contributingFunctions.length > 0) {
+					tooltipContent += `<br><small>Contributing functions:</small><br>`;
+					contributingFunctions.forEach(func => {
+						tooltipContent += `• ${func.name} (${func.confidence}% confidence)<br>`;
+					});
+				} else {
+					tooltipContent += `<br><small>No specific malicious functions detected</small>`;
+				}
+
+				// Create the bar element
+				const barElement = document.createElement("div");
+				barElement.className = "threat-bar";
+				barElement.innerHTML = `
+					<div class="threat-bar-label">
+						<div class="threat-name" title="${displayName}">${displayName}</div>
+						<div class="threat-percentage">${Math.round(percentage)}%</div>
+					</div>
+					<div class="threat-bar-track">
+						<div class="threat-bar-fill ${colorClass}" style="width: ${percentage}%" 
+							 data-tooltip="${tooltipContent.replace(/"/g, '&quot;')}"></div>
+					</div>
+				`;
+
+				// Add hover event for tooltip
+				const barFill = barElement.querySelector('.threat-bar-fill');
+				barFill.addEventListener('mouseenter', showTooltip);
+				barFill.addEventListener('mouseleave', hideTooltip);
+
+				return barElement;
+			}
+
+			// Show tooltip on hover
+			function showTooltip(e) {
+				const tooltipText = e.target.getAttribute('data-tooltip');
+				const tooltip = document.createElement('div');
+				tooltip.className = 'threat-tooltip';
+				tooltip.innerHTML = tooltipText;
+				
+				// Position tooltip
+				const rect = e.target.getBoundingClientRect();
+				const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+				tooltip.style.left = (rect.left + scrollLeft) + 'px';
+				tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) + 'px';
+				
+				// Add to document
+				document.body.appendChild(tooltip);
+				
+				// Show with slight delay
+				setTimeout(() => {
+					tooltip.classList.add('show');
+				}, 10);
+				
+				// Store reference for removal
+				e.target._tooltip = tooltip;
+			}
+
+			// Hide tooltip
+			function hideTooltip(e) {
+				if (e.target._tooltip) {
+					e.target._tooltip.remove();
+					e.target._tooltip = null;
+				}
+			}
+
+			// Update threat bars from security data - FIXED FOR RADAR
+			function updateThreatBarsFromSecurity(result) {
+				const radarData = result.security_metrics?.radar_data;
+				
+				// Use structured radar data if available
+				if (radarData && radarData.data && radarData.data.length > 0) {
+					updateAllThreatBars({
+						labels: radarData.labels || SECURITY_CATEGORIES,
+						data: radarData.data,
+						threatLevel: radarData.threat_level || "unknown",
+						contributingFunctions: radarData.contributing_functions || {}
+					});
+					return;
+				}
+				
+				// If no structured data, show empty bars
+				resetThreatBars();
+			}
+
+			// Update all threat bars
+			function updateAllThreatBars(threatData) {
+				// Hide placeholder
+				threatPlaceholder.style.display = "none";
+				
+				// Clear existing bars
+				const existingBars = threatBarsWrapper.querySelectorAll('.threat-bar');
+				existingBars.forEach(bar => bar.remove());
+
+				// Update threat level indicator
+				const levelText = threatData.threatLevel.charAt(0).toUpperCase() + threatData.threatLevel.slice(1);
+				threatLevel.textContent = levelText;
+				threatLevel.className = "threat-level " + threatData.threatLevel;
+
+				// Create bars for all categories
+				threatData.labels.forEach((label, index) => {
+					const percentage = threatData.data[index] || 0;
+					const contributingFunctions = threatData.contributingFunctions?.[label] || [];
+					const bar = createThreatBar(label, percentage, contributingFunctions);
+					threatBarsWrapper.appendChild(bar);
 				});
+
+				// Add a subtle animation delay for each bar
+				setTimeout(() => {
+					const bars = threatBarsWrapper.querySelectorAll('.threat-bar-fill');
+					bars.forEach((bar, index) => {
+						setTimeout(() => {
+							bar.style.transition = 'width 0.8s ease-out';
+						}, index * 50);
+					});
+				}, 100);
+			}
+
+			// Reset threat bars to placeholder state
+			function resetThreatBars() {
+				// Remove all threat bars
+				const existingBars = threatBarsWrapper.querySelectorAll('.threat-bar');
+				existingBars.forEach(bar => bar.remove());
+				
+				// Show placeholder
+				threatPlaceholder.style.display = "flex";
+				
+				// Reset threat level
+				threatLevel.textContent = "No Data";
+				threatLevel.className = "threat-level unknown";
 			}
 
 			// Update results from security data
@@ -1529,77 +1839,6 @@ DETAILED FINDINGS:
 					vulns: metrics.malicious_functions || 0,
 					size: formatFileSize(currentFile.size),
 				});
-			}
-
-			// ==================== RADAR CHART FUNCTIONS ====================
-
-			// Update radar chart
-			function updateRadar(radarData) {
-				radarPlaceholder.style.display = "none";
-
-				if (threatRadarChart) {
-					threatRadarChart.destroy();
-				}
-
-				threatLevel.textContent = radarData.threatLevel.charAt(0).toUpperCase() + radarData.threatLevel.slice(1);
-				threatLevel.className = "radar-threat-level " + radarData.threatLevel;
-
-				const avgScore = radarData.data.reduce((a, b) => a + b, 0) / radarData.data.length;
-				let threatColor;
-				if (avgScore > 70) {
-					threatColor = "#ef4444";
-				} else if (avgScore > 30) {
-					threatColor = "#f59e0b";
-				} else {
-					threatColor = "#10b981";
-				}
-
-				threatRadarChart = new Chart(radarCanvas, {
-					type: "radar",
-					data: {
-						labels: radarData.labels,
-						datasets: [
-							{
-								label: "Threat Level",
-								data: radarData.data,
-								backgroundColor: "rgba(59, 130, 246, 0.2)",
-								borderColor: threatColor,
-								borderWidth: 2,
-								pointBackgroundColor: threatColor,
-								pointBorderColor: "#fff",
-								pointBorderWidth: 1,
-								pointRadius: 3,
-							},
-						],
-					},
-					options: {
-						responsive: true,
-						maintainAspectRatio: false,
-						plugins: { legend: { display: false } },
-						scales: {
-							r: {
-								angleLines: { color: "rgba(0, 0, 0, 0.1)" },
-								grid: { color: "rgba(0, 0, 0, 0.1)" },
-								pointLabels: { font: { size: 9 }, color: "var(--text-light)" },
-								ticks: { display: false, maxTicksLimit: 5, beginAtZero: true, max: 100 },
-								min: 0,
-								max: 100,
-							},
-						},
-						elements: { line: { tension: 0.4 } },
-					},
-				});
-			}
-
-			// Reset radar to placeholder state
-			function resetRadar() {
-				if (threatRadarChart) {
-					threatRadarChart.destroy();
-					threatRadarChart = null;
-				}
-				radarPlaceholder.style.display = "flex";
-				threatLevel.textContent = "No Data";
-				threatLevel.className = "radar-threat-level";
 			}
 
 			// ==================== HELPER FUNCTIONS ====================
@@ -1790,7 +2029,9 @@ Note: Requires Ghidra decompilation first.`;
 
 			// Initialize
 			document.addEventListener("DOMContentLoaded", () => {
-				console.log("DeMa-AI Analysis Platform loaded with simplified drag & drop");
+				console.log("DeMa-AI Analysis Platform loaded with threat bars visualization and tooltips");
+				// Set up initial threat bars placeholder
+				resetThreatBars();
 			});
 		</script>
 	</body>
