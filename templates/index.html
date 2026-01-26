@@ -876,7 +876,7 @@
 						<div class="upload-box" id="uploadBox">
 							<i class="fas fa-cloud-upload-alt" id="uploadIcon"></i>
 							<div class="upload-text" id="uploadText">Drop file here or click to upload</div>
-							<div class="upload-subtext" id="uploadSubtext">.bin .exe .o .obj .elf .so .dll</div>
+							<div class="upload-subtext" id="uploadSubtext">.bin .exe .o .obj .elf .so .dll .py</div>
 						</div>
 
 						<div class="file-info" id="fileInfo">
@@ -1009,7 +1009,7 @@
 
 					<pre class="code-display" id="codeContent">
 // Select a file to begin analysis
-// Supported formats: .bin, .exe, .o, .obj, .elf, .so, .dll
+// Supported formats: .bin, .exe, .o, .obj, .elf, .so, .dll, .py
 //
 // Upload a file to see raw binary content
 // Other tabs require clicking the play button (▶) to run analysis
@@ -1103,7 +1103,7 @@
 			];
 
 			// Supported file extensions
-			const SUPPORTED_EXTENSIONS = ['.bin', '.exe', '.o', '.obj', '.elf', '.so', '.dll'];
+			const SUPPORTED_EXTENSIONS = ['.bin', '.exe', '.o', '.obj', '.elf', '.so', '.dll', '.py'];
 
 			// ==================== DRAG & DROP IMPLEMENTATION ====================
 
@@ -1135,7 +1135,7 @@
 			function unhighlight(e) {
 				uploadBox.classList.remove('dragover');
 				uploadText.textContent = 'Drop file here or click to upload';
-				uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll';
+				uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll .py';
 			}
 
 			// Handle dropped files
@@ -1168,7 +1168,7 @@
 						
 						showError(
 							"Unsupported File Type",
-							`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll`
+							`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll .py`
 						);
 					}
 				}
@@ -1187,7 +1187,7 @@
 			uploadBox.addEventListener("click", () => {
 				const input = document.createElement("input");
 				input.type = "file";
-				input.accept = ".bin,.exe,.o,.obj,.elf,.so,.dll";
+				input.accept = ".bin,.exe,.o,.obj,.elf,.so,.dll,.py";
 
 				input.addEventListener("change", (e) => {
 					if (e.target.files.length > 0) {
@@ -1266,7 +1266,7 @@
 				if (!isFileTypeSupported(file.name)) {
 					showError(
 						"Unsupported File Type",
-						`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll`
+						`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll, .py`
 					);
 					return; // Exit without processing
 				}
@@ -1318,7 +1318,7 @@
 						// Reset upload box UI
 						uploadBox.classList.remove('uploading');
 						uploadText.textContent = 'Drop file here or click to upload';
-						uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll';
+						uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll, .py';
 						uploadIcon.className = 'fas fa-cloud-upload-alt';
 					};
 
@@ -1334,6 +1334,20 @@
 
 			// Classify language automatically
 			async function classifyLanguage(file) {
+				// Shortcut: Python files
+				if (file.name.toLowerCase().endsWith(".py")) {
+					const data = {
+						language: "Python",
+						confidence: 1.0,
+					};
+
+					languageInfo = data;
+
+					statusInfo.textContent = `File: ${file.name} | Language: Python (100% confidence)`;
+					showNotification("Language detected: Python with 100% confidence");
+					return;
+				}
+
 				const formData = new FormData();
 				formData.append("file", file);
 
@@ -1364,6 +1378,7 @@
 					console.log("Language classification failed:", error);
 				}
 			}
+
 
 			// Perform calculation for a view
 			async function performCalculation(view) {
@@ -1985,7 +2000,7 @@ Hex Dump (first 1024 bytes):\n`;
 
 			// View content functions (initial views)
 			function getRawView() {
-				return "Upload a file to see raw content\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll\n\nOnce uploaded, raw file content will be displayed here automatically.";
+				return "Upload a file to see raw content\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll, .py\n\nOnce uploaded, raw file content will be displayed here automatically.";
 			}
 
 			function getGhidraView() {

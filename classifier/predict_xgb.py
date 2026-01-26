@@ -4,10 +4,12 @@ import json
 import numpy as np
 from feature_extractor import FeatureExtractor
 
+import joblib
+import numpy as np
+
 def predict_binary(filepath):
-    # Load trained model from disk
-    with open('classifier/model_xgb.pkl', 'rb') as f:
-        data = pickle.load(f)
+    # Load trained model bundle from disk
+    data = joblib.load('classifier/model_bundle.joblib')
     
     model = data['model']
     extractor = FeatureExtractor()
@@ -26,6 +28,7 @@ def predict_binary(filepath):
     confidence = float(np.max(prob))
 
     return language, confidence
+
 
 if __name__ == '__main__':
     # Ensure correct CLI usage

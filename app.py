@@ -2,6 +2,7 @@
 from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
 from enhance import HeuristicEnhancer
+from convert_python import python_to_c, CEmitter
 import requests
 import os
 import subprocess
@@ -11,6 +12,8 @@ import datetime
 import time
 import re
 import json
+
+
 
 # ==============================================================
 # GHIDRA CONFIGURATION
@@ -26,7 +29,7 @@ TIMEOUT = 120
 # ==============================================================
 # SECURITY ANALYSIS CONFIGURATION
 # ==============================================================
-SECURITY_API_URL = "http://10.208.53.78:5500/analyze"  # Your security analysis API
+SECURITY_API_URL = "http://10.208.53.231:5000/analyze"  # security analysis API
 
 # ==============================================================
 # SECURITY CATEGORIES FOR RADAR CHART
@@ -108,20 +111,59 @@ def ghidra_enhance():
 def run_ghidra_analysis(enhance=False):
     """Run Ghidra analysis with optional enhancement"""
     global current_ghidra_file
-    
-    env_error = check_ghidra_environment()
-    if env_error:
-        return jsonify({"error": env_error}), 500
 
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
     upload_file = request.files["file"]
     filename = upload_file.filename
+    file_ext = os.path.splitext(filename)[1].lower()
 
-    supported_extensions = {'.o', '.elf', '.exe', '.so', '.dll', '.dylib', '.bin', '.rom', '.img', '.c'}
-    file_ext = os.path.splitext(filename)[1]
-    
+    # 🔹 PYTHON FAST PATH
+    if file_ext == ".py":
+        try:
+            source = upload_file.read().decode("utf-8", errors="ignore")
+            converted_code = python_to_c(source)
+
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            py_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_python.c"
+            current_ghidra_file = py_filename
+            session['current_ghidra_file'] = current_ghidra_file
+
+            py_path = os.path.join(OUTPUT_DIR, py_filename)
+            with open(py_path, "w", encoding="utf-8") as f:
+                f.write(converted_code)
+
+            return jsonify({
+                "decompiled_code": converted_code,
+                "severity_score": 0,
+                "severity_label": "Unknown",
+                "method": "python_to_c",
+                "enhancement_status": "not_applicable",
+                "ghidra_time": 0,
+                "enhancement_time": 0,
+                "enhancement_info": None,
+                "saved_files": {
+                    "original": py_path,
+                    "enhanced": None
+                },
+                "current_ghidra_file": current_ghidra_file
+            })
+
+        except Exception as e:
+            print("Python conversion error:", str(e))
+            return jsonify({"error": str(e)}), 500
+
+    # 🔹 EXISTING GHIDRA PATH (unchanged)
+    env_error = check_ghidra_environment()
+    if env_error:
+        return jsonify({"error": env_error}), 500
+
+    supported_extensions = {
+        '.o', '.elf', '.exe', '.so', '.dll', '.dylib',
+        '.bin', '.rom', '.img', '.c'
+    }
+
     if file_ext not in supported_extensions:
         return jsonify({
             "error": f"File type {file_ext} not supported by Ghidra",
@@ -139,7 +181,9 @@ def run_ghidra_analysis(enhance=False):
         binary_path = os.path.join(save_dir, filename)
         upload_file.save(binary_path)
 
-        output_path = os.path.join(save_dir, f"{os.path.splitext(filename)[0]}_decompiled.c")
+        output_path = os.path.join(
+            save_dir, f"{os.path.splitext(filename)[0]}_decompiled.c"
+        )
 
         command = [
             GHIDRA_PATH,
@@ -152,7 +196,9 @@ def run_ghidra_analysis(enhance=False):
 
         print("Running Ghidra...")
         start_time = time.time()
-        result = subprocess.run(command, text=True, capture_output=True, timeout=TIMEOUT)
+        result = subprocess.run(
+            command, text=True, capture_output=True, timeout=TIMEOUT
+        )
         ghidra_time = time.time() - start_time
 
         if not os.path.exists(output_path):
@@ -168,51 +214,48 @@ def run_ghidra_analysis(enhance=False):
         original_ghidra_code = ghidra_code
         enhancement_time = 0
         enhancement_status = "not_requested"
-        
+
         if enhance:
             print("✨ Applying heuristic enhancement...")
             enhancement_start = time.time()
             try:
-                enhanced_code = enhancer.enhance_code_new(ghidra_code, filename)
+                enhanced_code = enhancer.enhance_code_new(
+                    ghidra_code, filename
+                )
                 enhancement_time = time.time() - enhancement_start
-                
+
                 if enhanced_code and enhanced_code != original_ghidra_code:
                     enhancement_status = "success"
                     ghidra_code = enhanced_code
-                    print(f"Heuristic enhancement completed in {enhancement_time:.2f}s")
                 else:
                     enhancement_status = "no_improvement"
-                    print("No significant improvement from heuristic enhancement")
             except Exception as e:
                 enhancement_status = "failed"
                 print(f"❌ Heuristic enhancement failed: {e}")
-    
-        # Store the current Ghidra file path for security analysis
+
         ghidra_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_ghidra.c"
         current_ghidra_file = ghidra_filename
         session['current_ghidra_file'] = current_ghidra_file
-        
+
         ghidra_path = os.path.join(OUTPUT_DIR, ghidra_filename)
         with open(ghidra_path, "w", encoding="utf-8") as out_file:
             out_file.write(original_ghidra_code)
 
         enhanced_path = None
         if enhancement_status == "success":
-            enhanced_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_enhanced.c"
-            enhanced_path = os.path.join(ENHANCED_OUTPUT_DIR, enhanced_filename)
+            enhanced_filename = (
+                f"{os.path.splitext(filename)[0]}_{timestamp}_enhanced.c"
+            )
+            enhanced_path = os.path.join(
+                ENHANCED_OUTPUT_DIR, enhanced_filename
+            )
             with open(enhanced_path, "w", encoding="utf-8") as out_file:
                 out_file.write(ghidra_code)
 
-        # Get enhancement statistics
         enhancement_info = enhancer.get_enhancement_info(
-            len(original_ghidra_code), 
+            len(original_ghidra_code),
             len(ghidra_code)
         )
-
-        print(f"Analysis complete!")
-        print(f"   - Ghidra time: {ghidra_time:.2f}s")
-        if enhancement_time > 0:
-            print(f"   - Enhancement time: {enhancement_time:.2f}s")
 
         return jsonify({
             "decompiled_code": ghidra_code,
@@ -221,7 +264,8 @@ def run_ghidra_analysis(enhance=False):
             "method": "ghidra_heuristic_enhanced" if enhance else "ghidra_only",
             "enhancement_status": enhancement_status,
             "ghidra_time": round(ghidra_time, 2),
-            "enhancement_time": round(enhancement_time, 2) if enhancement_time > 0 else 0,
+            "enhancement_time": round(enhancement_time, 2)
+            if enhancement_time > 0 else 0,
             "enhancement_info": enhancement_info,
             "saved_files": {
                 "original": ghidra_path,
@@ -231,10 +275,13 @@ def run_ghidra_analysis(enhance=False):
         })
 
     except subprocess.TimeoutExpired:
-        return jsonify({"error": f"Ghidra decompilation timed out after {TIMEOUT}s"}), 504
+        return jsonify({
+            "error": f"Ghidra decompilation timed out after {TIMEOUT}s"
+        }), 504
     except Exception as e:
         print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 # ==============================================================
 # SECURITY ANALYSIS ROUTE
@@ -373,68 +420,80 @@ def process_security_data(security_result):
     try:
         functions = security_result.get('functions', [])
         
-        # Map behavior categories to security categories - COMPREHENSIVE VERSION
+    # Map behavior categories to security categories 
         BEHAVIOR_TO_CATEGORY = {
-            # File/Network behaviors -> DATA_EXFILTRATION
-            'file_access': 'DATA_EXFILTRATION',
-            'network': 'DATA_EXFILTRATION',
-            'socket': 'DATA_EXFILTRATION',
-            'send': 'DATA_EXFILTRATION',
-            'recv': 'DATA_EXFILTRATION',
-            'fopen': 'DATA_EXFILTRATION',
-            'fwrite': 'DATA_EXFILTRATION',
-            'fread': 'DATA_EXFILTRATION',
-            'network_communication': 'DATA_EXFILTRATION',
-            'sensitive_data_access': 'DATA_EXFILTRATION',
-            
-            # Persistence behaviors
-            'persistence': 'PERSISTENCE',
-            'startup_modification': 'PERSISTENCE',
-            'cron_job_addition': 'PERSISTENCE',
-            'service_installation': 'PERSISTENCE',
-            
-            # Privilege escalation behaviors
-            'privilege': 'PRIVILEGE_ESCALATION',
-            'setuid_misuse': 'PRIVILEGE_ESCALATION',
-            'process': 'PRIVILEGE_ESCALATION',
-            'execve': 'PRIVILEGE_ESCALATION',
-            'system': 'PRIVILEGE_ESCALATION',
-            'chmod': 'PRIVILEGE_ESCALATION',
-            'setuid': 'PRIVILEGE_ESCALATION',
-            
-            # Surveillance behaviors
-            'surveillance': 'SURVEILLANCE',
-            'process_enumeration': 'SURVEILLANCE',
-            'keylogging': 'SURVEILLANCE',
-            'opendir': 'SURVEILLANCE',
-            'readdir': 'SURVEILLANCE',
-            
-            # Destructive behaviors
-            'destructive': 'DESTRUCTIVE',
-            'disk_wiping': 'DESTRUCTIVE',
-            'recursive_deletion': 'DESTRUCTIVE',
-            'remove': 'DESTRUCTIVE',
-            'unlink': 'DESTRUCTIVE',
-            
-            # Evasion behaviors
-            'evasion': 'EVASION',
-            'anti_debugging': 'EVASION',
-            'vm_detection': 'EVASION',
-            'code_obfuscation': 'EVASION',
-            'ptrace': 'EVASION',
-            'memory': 'EVASION',
-            
-            # Denial of Service behaviors
-            'dos': 'DENIAL_OF_SERVICE',
-            'fork_bomb': 'DENIAL_OF_SERVICE',
-            'uncontrolled_execution': 'DENIAL_OF_SERVICE',
-            
-            # Credential theft behaviors
-            'credential': 'CREDENTIAL_THEFT',
-            'shadow_read': 'CREDENTIAL_THEFT',
-            'password_access': 'CREDENTIAL_THEFT',
-            'credential_access': 'CREDENTIAL_THEFT',
-        }
+    # File/Network behaviors -> DATA_EXFILTRATION
+    'file_access': 'DATA_EXFILTRATION',
+    'network': 'DATA_EXFILTRATION',
+    'socket': 'DATA_EXFILTRATION',
+    'bind': 'DATA_EXFILTRATION',
+    'listen': 'DATA_EXFILTRATION',
+    'accept': 'DATA_EXFILTRATION',
+    'connect': 'DATA_EXFILTRATION',
+    'send': 'DATA_EXFILTRATION',
+    'recv': 'DATA_EXFILTRATION',
+    'fopen': 'DATA_EXFILTRATION',
+    'fwrite': 'DATA_EXFILTRATION',
+    'fread': 'DATA_EXFILTRATION',
+    'network_communication': 'DATA_EXFILTRATION',
+    'sensitive_data_access': 'DATA_EXFILTRATION',
+    
+    # Persistence behaviors
+    'persistence': 'PERSISTENCE',
+    'startup_modification': 'PERSISTENCE',
+    'cron_job_addition': 'PERSISTENCE',
+    'service_installation': 'PERSISTENCE',
+    'chmod': 'PERSISTENCE',        
+    'chdir': 'PERSISTENCE',        
+    'mkdir': 'PERSISTENCE',        
+    
+    # Privilege escalation behaviors
+    'privilege': 'PRIVILEGE_ESCALATION',
+    'setuid_misuse': 'PRIVILEGE_ESCALATION',
+    'process': 'PRIVILEGE_ESCALATION',        
+    'execve': 'PRIVILEGE_ESCALATION',
+    'system': 'PRIVILEGE_ESCALATION',
+    'setuid': 'PRIVILEGE_ESCALATION',
+    'setsid': 'PRIVILEGE_ESCALATION',        
+    'fork': 'PRIVILEGE_ESCALATION',          
+    
+    # Surveillance behaviors
+    'surveillance': 'SURVEILLANCE',
+    'process_enumeration': 'SURVEILLANCE',
+    'keylogging': 'SURVEILLANCE',
+    'opendir': 'SURVEILLANCE',
+    'readdir': 'SURVEILLANCE',
+    'stat': 'SURVEILLANCE',                  
+    'input': 'SURVEILLANCE',                 
+    
+    # Destructive behaviors
+    'destructive': 'DESTRUCTIVE',
+    'disk_wiping': 'DESTRUCTIVE',
+    'recursive_deletion': 'DESTRUCTIVE',
+    'remove': 'DESTRUCTIVE',
+    'unlink': 'DESTRUCTIVE',
+    
+    # Evasion behaviors
+    'evasion': 'EVASION',
+    'anti_debugging': 'EVASION',
+    'vm_detection': 'EVASION',
+    'code_obfuscation': 'EVASION',
+    'ptrace': 'EVASION',
+    'memory': 'EVASION',                     
+    'memcpy': 'EVASION',                      
+    'memset': 'EVASION',                     
+    
+    # Denial of Service behaviors
+    'dos': 'DENIAL_OF_SERVICE',
+    'fork_bomb': 'DENIAL_OF_SERVICE',
+    'uncontrolled_execution': 'DENIAL_OF_SERVICE',  
+    
+    # Credential theft behaviors
+    'credential': 'CREDENTIAL_THEFT',
+    'shadow_read': 'CREDENTIAL_THEFT',
+    'password_access': 'CREDENTIAL_THEFT',
+    'credential_access': 'CREDENTIAL_THEFT',
+}
         
         malicious_count = len([f for f in functions if f.get('classification', {}).get('malicious', False)])
         total_functions = len(functions)
