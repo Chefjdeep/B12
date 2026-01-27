@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
 from enhance import HeuristicEnhancer
-from convert_python import python_to_c, CEmitter
+from convert_python import python_to_c
 import requests
 import os
 import subprocess
@@ -123,29 +123,73 @@ def run_ghidra_analysis(enhance=False):
     if file_ext == ".py":
         try:
             source = upload_file.read().decode("utf-8", errors="ignore")
-            converted_code = python_to_c(source)
+            base_code = python_to_c(source)
+
+            enhancement_time = 0
+            enhancement_status = "not_requested"
+
+            if enhance:
+                print("Applying heuristic enhancement to Python output...")
+                enhancement_start = time.time()
+                try:
+                    enhanced_code = enhancer.enhance_code_new(
+                        base_code, filename
+                    )
+                    enhancement_time = time.time() - enhancement_start
+
+                    if enhanced_code and enhanced_code != base_code:
+                        enhancement_status = "success"
+                        final_code = enhanced_code
+                    else:
+                        enhancement_status = "no_improvement"
+                        final_code = base_code
+
+                except Exception as e:
+                    enhancement_status = "failed"
+                    print(f"❌ Python enhancement failed: {e}")
+                    final_code = base_code
+            else:
+                final_code = base_code
 
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            py_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_python.c"
-            current_ghidra_file = py_filename
-            session['current_ghidra_file'] = current_ghidra_file
+            base_name = os.path.splitext(filename)[0]
 
-            py_path = os.path.join(OUTPUT_DIR, py_filename)
-            with open(py_path, "w", encoding="utf-8") as f:
-                f.write(converted_code)
+            # Save ONLY to the correct directory
+            if enhance:
+                output_filename = f"{base_name}_{timestamp}_python_enhanced.c"
+                output_path = os.path.join(
+                    ENHANCED_OUTPUT_DIR, output_filename
+                )
+            else:
+                output_filename = f"{base_name}_{timestamp}_python.c"
+                output_path = os.path.join(
+                    OUTPUT_DIR, output_filename
+                )
+
+            current_ghidra_file = output_filename
+            session["current_ghidra_file"] = current_ghidra_file
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(final_code)
+
+            enhancement_info = enhancer.get_enhancement_info(
+                len(base_code),
+                len(final_code)
+            )
 
             return jsonify({
-                "decompiled_code": converted_code,
+                "decompiled_code": final_code,
                 "severity_score": 0,
                 "severity_label": "Unknown",
-                "method": "python_to_c",
-                "enhancement_status": "not_applicable",
+                "method": "python_to_c_enhanced" if enhance else "python_to_c",
+                "enhancement_status": enhancement_status,
                 "ghidra_time": 0,
-                "enhancement_time": 0,
-                "enhancement_info": None,
+                "enhancement_time": round(enhancement_time, 2)
+                if enhancement_time > 0 else 0,
+                "enhancement_info": enhancement_info,
                 "saved_files": {
-                    "original": py_path,
-                    "enhanced": None
+                    "original": None if enhance else output_path,
+                    "enhanced": output_path if enhance else None
                 },
                 "current_ghidra_file": current_ghidra_file
             })
@@ -160,8 +204,8 @@ def run_ghidra_analysis(enhance=False):
         return jsonify({"error": env_error}), 500
 
     supported_extensions = {
-        '.o', '.elf', '.exe', '.so', '.dll', '.dylib',
-        '.bin', '.rom', '.img', '.c'
+        ".o", ".elf", ".exe", ".so", ".dll", ".dylib",
+        ".bin", ".rom", ".img", ".c"
     }
 
     if file_ext not in supported_extensions:
@@ -175,14 +219,17 @@ def run_ghidra_analysis(enhance=False):
     save_dir = os.path.join(TEMP_SAVE_DIR, run_id)
     os.makedirs(save_dir, exist_ok=True)
 
-    print(f"Running Ghidra {'with heuristic enhancement' if enhance else ''} on: {filename}")
+    print(
+        f"Running Ghidra {'with heuristic enhancement' if enhance else ''} on: {filename}"
+    )
 
     try:
         binary_path = os.path.join(save_dir, filename)
         upload_file.save(binary_path)
 
         output_path = os.path.join(
-            save_dir, f"{os.path.splitext(filename)[0]}_decompiled.c"
+            save_dir,
+            f"{os.path.splitext(filename)[0]}_decompiled.c"
         )
 
         command = [
@@ -197,7 +244,10 @@ def run_ghidra_analysis(enhance=False):
         print("Running Ghidra...")
         start_time = time.time()
         result = subprocess.run(
-            command, text=True, capture_output=True, timeout=TIMEOUT
+            command,
+            text=True,
+            capture_output=True,
+            timeout=TIMEOUT
         )
         ghidra_time = time.time() - start_time
 
@@ -216,7 +266,7 @@ def run_ghidra_analysis(enhance=False):
         enhancement_status = "not_requested"
 
         if enhance:
-            print("✨ Applying heuristic enhancement...")
+            print("Applying heuristic enhancement...")
             enhancement_start = time.time()
             try:
                 enhanced_code = enhancer.enhance_code_new(
@@ -229,13 +279,14 @@ def run_ghidra_analysis(enhance=False):
                     ghidra_code = enhanced_code
                 else:
                     enhancement_status = "no_improvement"
+
             except Exception as e:
                 enhancement_status = "failed"
                 print(f"❌ Heuristic enhancement failed: {e}")
 
         ghidra_filename = f"{os.path.splitext(filename)[0]}_{timestamp}_ghidra.c"
         current_ghidra_file = ghidra_filename
-        session['current_ghidra_file'] = current_ghidra_file
+        session["current_ghidra_file"] = current_ghidra_file
 
         ghidra_path = os.path.join(OUTPUT_DIR, ghidra_filename)
         with open(ghidra_path, "w", encoding="utf-8") as out_file:
@@ -278,10 +329,10 @@ def run_ghidra_analysis(enhance=False):
         return jsonify({
             "error": f"Ghidra decompilation timed out after {TIMEOUT}s"
         }), 504
+
     except Exception as e:
         print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
-
 
 # ==============================================================
 # SECURITY ANALYSIS ROUTE
