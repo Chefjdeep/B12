@@ -29,7 +29,7 @@ TIMEOUT = 120
 # ==============================================================
 # SECURITY ANALYSIS CONFIGURATION
 # ==============================================================
-SECURITY_API_URL = "http://10.208.53.231:5000/analyze"  # security analysis API
+SECURITY_API_URL = "http://10.208.53.24:5000/analyze"  # security analysis API
 
 # ==============================================================
 # SECURITY CATEGORIES FOR RADAR CHART
@@ -471,80 +471,80 @@ def process_security_data(security_result):
     try:
         functions = security_result.get('functions', [])
         
-    # Map behavior categories to security categories 
+        # Map behavior categories to security categories 
         BEHAVIOR_TO_CATEGORY = {
-    # File/Network behaviors -> DATA_EXFILTRATION
-    'file_access': 'DATA_EXFILTRATION',
-    'network': 'DATA_EXFILTRATION',
-    'socket': 'DATA_EXFILTRATION',
-    'bind': 'DATA_EXFILTRATION',
-    'listen': 'DATA_EXFILTRATION',
-    'accept': 'DATA_EXFILTRATION',
-    'connect': 'DATA_EXFILTRATION',
-    'send': 'DATA_EXFILTRATION',
-    'recv': 'DATA_EXFILTRATION',
-    'fopen': 'DATA_EXFILTRATION',
-    'fwrite': 'DATA_EXFILTRATION',
-    'fread': 'DATA_EXFILTRATION',
-    'network_communication': 'DATA_EXFILTRATION',
-    'sensitive_data_access': 'DATA_EXFILTRATION',
-    
-    # Persistence behaviors
-    'persistence': 'PERSISTENCE',
-    'startup_modification': 'PERSISTENCE',
-    'cron_job_addition': 'PERSISTENCE',
-    'service_installation': 'PERSISTENCE',
-    'chmod': 'PERSISTENCE',        
-    'chdir': 'PERSISTENCE',        
-    'mkdir': 'PERSISTENCE',        
-    
-    # Privilege escalation behaviors
-    'privilege': 'PRIVILEGE_ESCALATION',
-    'setuid_misuse': 'PRIVILEGE_ESCALATION',
-    'process': 'PRIVILEGE_ESCALATION',        
-    'execve': 'PRIVILEGE_ESCALATION',
-    'system': 'PRIVILEGE_ESCALATION',
-    'setuid': 'PRIVILEGE_ESCALATION',
-    'setsid': 'PRIVILEGE_ESCALATION',        
-    'fork': 'PRIVILEGE_ESCALATION',          
-    
-    # Surveillance behaviors
-    'surveillance': 'SURVEILLANCE',
-    'process_enumeration': 'SURVEILLANCE',
-    'keylogging': 'SURVEILLANCE',
-    'opendir': 'SURVEILLANCE',
-    'readdir': 'SURVEILLANCE',
-    'stat': 'SURVEILLANCE',                  
-    'input': 'SURVEILLANCE',                 
-    
-    # Destructive behaviors
-    'destructive': 'DESTRUCTIVE',
-    'disk_wiping': 'DESTRUCTIVE',
-    'recursive_deletion': 'DESTRUCTIVE',
-    'remove': 'DESTRUCTIVE',
-    'unlink': 'DESTRUCTIVE',
-    
-    # Evasion behaviors
-    'evasion': 'EVASION',
-    'anti_debugging': 'EVASION',
-    'vm_detection': 'EVASION',
-    'code_obfuscation': 'EVASION',
-    'ptrace': 'EVASION',
-    'memory': 'EVASION',                     
-    'memcpy': 'EVASION',                      
-    'memset': 'EVASION',                     
-    
-    # Denial of Service behaviors
-    'dos': 'DENIAL_OF_SERVICE',
-    'fork_bomb': 'DENIAL_OF_SERVICE',
-    'uncontrolled_execution': 'DENIAL_OF_SERVICE',  
-    
-    # Credential theft behaviors
-    'credential': 'CREDENTIAL_THEFT',
-    'shadow_read': 'CREDENTIAL_THEFT',
-    'password_access': 'CREDENTIAL_THEFT',
-    'credential_access': 'CREDENTIAL_THEFT',
-}
+            # File/Network behaviors -> DATA_EXFILTRATION
+            'file_access': 'DATA_EXFILTRATION',
+            'network': 'DATA_EXFILTRATION',
+            'socket': 'DATA_EXFILTRATION',
+            'bind': 'DATA_EXFILTRATION',
+            'listen': 'DATA_EXFILTRATION',
+            'accept': 'DATA_EXFILTRATION',
+            'connect': 'DATA_EXFILTRATION',
+            'send': 'DATA_EXFILTRATION',
+            'recv': 'DATA_EXFILTRATION',
+            'fopen': 'DATA_EXFILTRATION',
+            'fwrite': 'DATA_EXFILTRATION',
+            'fread': 'DATA_EXFILTRATION',
+            'network_communication': 'DATA_EXFILTRATION',
+            'sensitive_data_access': 'DATA_EXFILTRATION',
+            
+            # Persistence behaviors
+            'persistence': 'PERSISTENCE',
+            'startup_modification': 'PERSISTENCE',
+            'cron_job_addition': 'PERSISTENCE',
+            'service_installation': 'PERSISTENCE',
+            'chmod': 'PERSISTENCE',        
+            'chdir': 'PERSISTENCE',        
+            'mkdir': 'PERSISTENCE',        
+            
+            # Privilege escalation behaviors
+            'privilege': 'PRIVILEGE_ESCALATION',
+            'setuid_misuse': 'PRIVILEGE_ESCALATION',
+            'process': 'PRIVILEGE_ESCALATION',        
+            'execve': 'PRIVILEGE_ESCALATION',
+            'system': 'PRIVILEGE_ESCALATION',
+            'setuid': 'PRIVILEGE_ESCALATION',
+            'setsid': 'PRIVILEGE_ESCALATION',        
+            'fork': 'PRIVILEGE_ESCALATION',          
+            
+            # Surveillance behaviors
+            'surveillance': 'SURVEILLANCE',
+            'process_enumeration': 'SURVEILLANCE',
+            'keylogging': 'SURVEILLANCE',
+            'opendir': 'SURVEILLANCE',
+            'readdir': 'SURVEILLANCE',
+            'stat': 'SURVEILLANCE',                  
+            'input': 'SURVEILLANCE',                 
+            
+            # Destructive behaviors
+            'destructive': 'DESTRUCTIVE',
+            'disk_wiping': 'DESTRUCTIVE',
+            'recursive_deletion': 'DESTRUCTIVE',
+            'remove': 'DESTRUCTIVE',
+            'unlink': 'DESTRUCTIVE',
+            
+            # Evasion behaviors
+            'evasion': 'EVASION',
+            'anti_debugging': 'EVASION',
+            'vm_detection': 'EVASION',
+            'code_obfuscation': 'EVASION',
+            'ptrace': 'EVASION',
+            'memory': 'EVASION',                     
+            'memcpy': 'EVASION',                      
+            'memset': 'EVASION',                     
+            
+            # Denial of Service behaviors
+            'dos': 'DENIAL_OF_SERVICE',
+            'fork_bomb': 'DENIAL_OF_SERVICE',
+            'uncontrolled_execution': 'DENIAL_OF_SERVICE',  
+            
+            # Credential theft behaviors
+            'credential': 'CREDENTIAL_THEFT',
+            'shadow_read': 'CREDENTIAL_THEFT',
+            'password_access': 'CREDENTIAL_THEFT',
+            'credential_access': 'CREDENTIAL_THEFT',
+        }
         
         malicious_count = len([f for f in functions if f.get('classification', {}).get('malicious', False)])
         total_functions = len(functions)
@@ -566,6 +566,102 @@ def process_security_data(security_result):
                 # Track which categories this function contributes to
                 contributed_categories = set()
                 
+                # Check if function has any behavioral data
+                has_behavioral_data = (
+                    func.get('classification', {}).get('behavioral_actions') or
+                    func.get('signals', {}).get('triggers') or
+                    any(category in (func.get('classification', {}).get('explanation') or '')
+                        for category in SECURITY_CATEGORIES)
+                )
+                
+                if not has_behavioral_data:
+                    # FALLBACK: Distribute score based on function name heuristics
+                    func_lower = func_name.lower()
+                    
+                    # Heuristic mapping based on function names
+                    if any(keyword in func_lower for keyword in ['network', 'socket', 'connect', 'bind', 'listen']):
+                        # Network functions → DATA_EXFILTRATION
+                        category = 'DATA_EXFILTRATION'
+                        category_scores[category] += score_base * 0.7
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.7)
+                        })
+                        contributed_categories.add(category)
+                    
+                    elif any(keyword in func_lower for keyword in ['thread', 'process', 'fork', 'exec', 'system']):
+                        # Thread/process functions → PRIVILEGE_ESCALATION
+                        category = 'PRIVILEGE_ESCALATION'
+                        category_scores[category] += score_base * 0.7
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.7)
+                        })
+                        contributed_categories.add(category)
+                    
+                    elif any(keyword in func_lower for keyword in ['file', 'write', 'read', 'fopen', 'fwrite']):
+                        # File operations → DATA_EXFILTRATION
+                        category = 'DATA_EXFILTRATION'
+                        category_scores[category] += score_base * 0.6
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.6)
+                        })
+                        contributed_categories.add(category)
+                    
+                    elif any(keyword in func_lower for keyword in ['memory', 'alloc', 'free', 'mem', 'memset']):
+                        # Memory operations → EVASION
+                        category = 'EVASION'
+                        category_scores[category] += score_base * 0.7
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.7)
+                        })
+                        contributed_categories.add(category)
+                    
+                    elif any(keyword in func_lower for keyword in ['time', 'sleep', 'wait', 'delay']):
+                        # Timing functions → DENIAL_OF_SERVICE or EVASION
+                        category = 'DENIAL_OF_SERVICE'
+                        category_scores[category] += score_base * 0.5
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.5)
+                        })
+                        contributed_categories.add(category)
+                    
+                    elif func_name == 'entry' or 'main' in func_lower or func_name.startswith('_') and not func_name.startswith('__'):
+                        # Entry point or system functions → Distribute across multiple categories
+                        for category in ['PRIVILEGE_ESCALATION', 'EVASION', 'DENIAL_OF_SERVICE']:
+                            category_scores[category] += score_base * 0.3
+                            contributing_functions[category].append({
+                                'name': func_name,
+                                'confidence': round(confidence * 100 * 0.3)
+                            })
+                            contributed_categories.add(category)
+                    
+                    elif func_name.startswith('__') and 'St3__' in func_name:
+                        # C++ template functions → Lower confidence, assume EVASION
+                        category = 'EVASION'
+                        category_scores[category] += score_base * 0.4
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.4)
+                        })
+                        contributed_categories.add(category)
+                    
+                    else:
+                        # Default: Assume EVASION threat
+                        category = 'EVASION'
+                        category_scores[category] += score_base * 0.5
+                        contributing_functions[category].append({
+                            'name': func_name,
+                            'confidence': round(confidence * 100 * 0.5)
+                        })
+                        contributed_categories.add(category)
+                    
+                    continue  # Skip the regular processing for functions with no behavioral data
+                
+                # REGULAR PROCESSING for functions with behavioral data:
                 # 1. Check behavioral actions (highest weight)
                 behavioral_actions = func.get('classification', {}).get('behavioral_actions', [])
                 for action in behavioral_actions:
@@ -614,7 +710,7 @@ def process_security_data(security_result):
                             'confidence': round(confidence * 100 * 0.3)  # Reduced confidence for text mentions
                         })
 
-        # SIMPLE FIX: Cap scores at 100, ensure minimum of 0
+        # SIMPLE NORMALIZATION: Cap scores at 100, ensure minimum of 0
         normalized_scores = []
         for category in SECURITY_CATEGORIES:
             # Cap at 100, ensure minimum of 0
@@ -625,7 +721,7 @@ def process_security_data(security_result):
         avg_score = sum(normalized_scores) / len(normalized_scores) if normalized_scores else 0
         if avg_score > 70:
             threat_level = "high"
-        elif avg_score > 30:
+        elif avg_score > 40:
             threat_level = "medium"
         elif avg_score > 0:
             threat_level = "low"
@@ -648,9 +744,16 @@ def process_security_data(security_result):
         for i, category in enumerate(SECURITY_CATEGORIES):
             print(f"{category}: {normalized_scores[i]:.1f}%")
             if contributing_functions[category]:
-                print(f"  Contributing functions: {[f['name'] for f in contributing_functions[category]]}")
+                func_list = []
+                for func_info in contributing_functions[category]:
+                    func_display = func_info['name']
+                    if len(func_display) > 30:
+                        func_display = func_display[:27] + "..."
+                    func_list.append(f"{func_display} ({func_info['confidence']}%)")
+                print(f"  Contributing functions: {func_list}")
         print(f"Average Score: {avg_score:.1f}%")
         print(f"Threat Level: {threat_level}")
+        print(f"Malicious Functions: {malicious_count}/{total_functions}")
         print("==================================\n")
         
         return {
@@ -659,7 +762,7 @@ def process_security_data(security_result):
                 "data": normalized_scores,
                 "threat_level": threat_level,
                 "avg_score": avg_score,
-                "contributing_functions": contributing_functions  # ADDED
+                "contributing_functions": contributing_functions
             },
             "metrics": {
                 "malicious_functions": malicious_count,

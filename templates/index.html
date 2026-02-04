@@ -118,7 +118,7 @@
 				overflow-y: auto;
 				flex: 1;
 				min-width: 0;
-				/* display: flex; */
+				display: flex;
 				flex-direction: column;
 			}
 
@@ -451,7 +451,7 @@
 			}
 
 			.threat-tooltip::after {
-				content: '';
+				content: "";
 				position: absolute;
 				bottom: 100%;
 				left: 10px;
@@ -639,6 +639,151 @@
 				display: block;
 			}
 
+			/* Security Report Styles - CLEAN FORMATTING */
+			.security-report {
+				padding: 20px;
+				font-family: "Menlo", "Monaco", "Courier New", monospace;
+				font-size: 11px;
+				line-height: 1.4;
+				background: white;
+				overflow-x: auto;
+			}
+
+			.security-report table {
+				border-collapse: collapse;
+				width: 100%;
+				margin: 20px 0;
+				table-layout: fixed;
+			}
+
+			.security-report th,
+			.security-report td {
+				border: 1px solid #000;
+				padding: 6px 8px;
+				vertical-align: top;
+				text-align: left;
+				word-wrap: break-word;
+				overflow-wrap: break-word;
+				white-space: normal;
+			}
+
+			.security-report th {
+				background-color: #f0f0f0;
+				font-weight: bold;
+			}
+
+			/* Column-specific widths */
+			.security-report th:nth-child(1),
+			.security-report td:nth-child(1) {
+				/* No. */
+				width: 40px;
+				text-align: center;
+			}
+
+			.security-report th:nth-child(2),
+			.security-report td:nth-child(2) {
+				/* Function Name */
+				width: 150px;
+			}
+
+			.security-report th:nth-child(3),
+			.security-report td:nth-child(3) {
+				/* Status */
+				width: 80px;
+				text-align: center;
+			}
+
+			.security-report th:nth-child(4),
+			.security-report td:nth-child(4) {
+				/* Behaviors/APIs */
+				width: 180px;
+			}
+
+			.security-report th:nth-child(5),
+			.security-report td:nth-child(5) {
+				/* Main Threat & Explanation */
+				width: auto;
+				min-width: 300px;
+				text-align: left;
+			}
+
+			/* Explanation cell styling */
+			.security-report td:nth-child(5) {
+				line-height: 1.4;
+			}
+
+			.security-report td:nth-child(5) strong {
+				color: #000;
+				font-weight: bold;
+				display: block;
+				margin: 4px 0 2px 0;
+			}
+
+			.security-report td:nth-child(5) br {
+				display: block;
+				margin-bottom: 3px;
+				content: "";
+			}
+
+			/* API list styling */
+			.security-report td:nth-child(4) small {
+				color: #555;
+				font-size: 9px;
+				display: block;
+				margin-top: 2px;
+				font-family: "Menlo", "Monaco", monospace;
+			}
+
+			.security-report .report-header {
+				margin-bottom: 10px;
+				padding-bottom: 10px;
+				border-bottom: 1px solid #ccc;
+			}
+
+			.security-report .report-title {
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 5px;
+				color: #000;
+			}
+
+			.security-report .report-meta {
+				margin-bottom: 3px;
+				font-size: 11px;
+				color: #555;
+			}
+
+			.security-report .section-divider {
+				border-top: 2px solid #666;
+				margin: 20px 0;
+				padding-top: 15px;
+			}
+
+			.security-report .recommendation {
+				white-space: pre-line;
+				line-height: 1.6;
+				margin-top: 10px;
+				padding: 12px;
+				background-color: #f8f9fa;
+				border: 1px solid #dee2e6;
+				border-radius: 4px;
+				font-size: 12px;
+				color: #333;
+			}
+
+			/* Function name styling */
+			.security-report td:nth-child(2) {
+				font-weight: bold;
+				font-family: "Menlo", "Monaco", monospace;
+			}
+
+			.security-report td:nth-child(2) small {
+				font-weight: normal;
+				color: #666;
+				font-size: 9px;
+				display: block;
+			}
+
 			.code-display {
 				font-family: "Menlo", "Monaco", "Courier New", monospace;
 				font-size: 12px;
@@ -652,6 +797,7 @@
 				position: relative;
 				z-index: 1;
 				background: transparent;
+				overflow-x: auto;
 			}
 
 			.status-bar {
@@ -829,8 +975,19 @@
 
 			/* Animations */
 			@keyframes spin {
-				0% { transform: rotate(0deg); }
-				100% { transform: rotate(360deg); }
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+
+			/* Calculation Guide Styles */
+			.calculation-example {
+				padding: 16px;
+				line-height: 1.6;
+				font-size: 13px;
 			}
 
 			/* Responsive adjustments for threat bars */
@@ -875,8 +1032,12 @@
 						<div class="section-title">Upload File</div>
 						<div class="upload-box" id="uploadBox">
 							<i class="fas fa-cloud-upload-alt" id="uploadIcon"></i>
-							<div class="upload-text" id="uploadText">Drop file here or click to upload</div>
-							<div class="upload-subtext" id="uploadSubtext">.bin .exe .o .obj .elf .so .dll .py</div>
+							<div class="upload-text" id="uploadText">
+								Drop file here or click to upload
+							</div>
+							<div class="upload-subtext" id="uploadSubtext">
+								.bin .exe .o .obj .elf .so .dll .py
+							</div>
 						</div>
 
 						<div class="file-info" id="fileInfo">
@@ -928,11 +1089,11 @@
 							</div>
 							<div class="legend-item">
 								<div class="legend-color orange"></div>
-								<span>Medium Risk (30-70%)</span>
+								<span>Medium Risk (40-70%)</span>
 							</div>
 							<div class="legend-item">
 								<div class="legend-color green"></div>
-								<span>Low Risk (<30%)</span>
+								<span>Low Risk (<40%)</span>
 							</div>
 						</div>
 					</div>
@@ -987,6 +1148,14 @@
 							</button>
 							<button class="play-button" data-action="calculate">
 								<i class="fas fa-play"></i>
+							</button>
+						</div>
+
+						<!-- NEW: Calculation Guide Tab - No Play Button -->
+						<div class="tab-button-pair raw-code" data-view="calculation">
+							<button class="tab-label" data-action="switch">
+								<i class="fas fa-calculator"></i>
+								Calculation Guide
 							</button>
 						</div>
 					</div>
@@ -1103,12 +1272,21 @@
 			];
 
 			// Supported file extensions
-			const SUPPORTED_EXTENSIONS = ['.bin', '.exe', '.o', '.obj', '.elf', '.so', '.dll', '.py'];
+			const SUPPORTED_EXTENSIONS = [
+				".bin",
+				".exe",
+				".o",
+				".obj",
+				".elf",
+				".so",
+				".dll",
+				".py",
+			];
 
 			// ==================== DRAG & DROP IMPLEMENTATION ====================
 
 			// Prevent default drag behaviors
-			['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+			["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
 				uploadBox.addEventListener(eventName, preventDefaults, false);
 			});
 
@@ -1118,54 +1296,54 @@
 			}
 
 			// Simple highlight - NO VALIDATION during drag
-			['dragenter', 'dragover'].forEach(eventName => {
-					uploadBox.addEventListener(eventName, highlight, false);
+			["dragenter", "dragover"].forEach((eventName) => {
+				uploadBox.addEventListener(eventName, highlight, false);
 			});
 
-			['dragleave', 'drop'].forEach(eventName => {
-					uploadBox.addEventListener(eventName, unhighlight, false);
+			["dragleave", "drop"].forEach((eventName) => {
+				uploadBox.addEventListener(eventName, unhighlight, false);
 			});
 
 			function highlight(e) {
-				uploadBox.classList.add('dragover');
-				uploadText.textContent = 'Drop to upload';
-				uploadSubtext.textContent = 'Release file here';
+				uploadBox.classList.add("dragover");
+				uploadText.textContent = "Drop to upload";
+				uploadSubtext.textContent = "Release file here";
 			}
 
 			function unhighlight(e) {
-				uploadBox.classList.remove('dragover');
-				uploadText.textContent = 'Drop file here or click to upload';
-				uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll .py';
+				uploadBox.classList.remove("dragover");
+				uploadText.textContent = "Drop file here or click to upload";
+				uploadSubtext.textContent = ".bin .exe .o .obj .elf .so .dll .py";
 			}
 
 			// Handle dropped files
-			uploadBox.addEventListener('drop', handleDrop, false);
+			uploadBox.addEventListener("drop", handleDrop, false);
 
 			function handleDrop(e) {
 				const dt = e.dataTransfer;
 				const files = dt.files;
-				
+
 				if (files.length > 0) {
 					// Take the first file only
 					const file = files[0];
-					
+
 					// Check if file type is supported (REAL validation here)
 					if (isFileTypeSupported(file.name)) {
 						// Show uploading state
-						uploadBox.classList.add('uploading');
-						uploadText.textContent = 'Uploading...';
-						uploadSubtext.textContent = 'Processing file';
-						uploadIcon.className = 'fas fa-spinner';
-						
+						uploadBox.classList.add("uploading");
+						uploadText.textContent = "Uploading...";
+						uploadSubtext.textContent = "Processing file";
+						uploadIcon.className = "fas fa-spinner";
+
 						// Process immediately
 						handleFileUpload(file);
 					} else {
 						// Show brief error flash
-						uploadBox.classList.add('invalid');
+						uploadBox.classList.add("invalid");
 						setTimeout(() => {
-							uploadBox.classList.remove('invalid');
+							uploadBox.classList.remove("invalid");
 						}, 1000);
-						
+
 						showError(
 							"Unsupported File Type",
 							`"${file.name}" is not a supported format.\n\nSupported formats: .bin, .exe, .o, .obj, .elf, .so, .dll .py`
@@ -1176,8 +1354,10 @@
 
 			// Check if file type is supported
 			function isFileTypeSupported(filename) {
-				if (!filename || filename.indexOf('.') === -1) return false;
-				const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+				if (!filename || filename.indexOf(".") === -1) return false;
+				const extension = filename
+					.toLowerCase()
+					.substring(filename.lastIndexOf("."));
 				return SUPPORTED_EXTENSIONS.includes(extension);
 			}
 
@@ -1270,7 +1450,7 @@
 					);
 					return; // Exit without processing
 				}
-				
+
 				currentFile = file;
 
 				// Update file info
@@ -1314,12 +1494,12 @@
 						showNotification(
 							"File uploaded successfully. Language classification in progress."
 						);
-						
+
 						// Reset upload box UI
-						uploadBox.classList.remove('uploading');
-						uploadText.textContent = 'Drop file here or click to upload';
-						uploadSubtext.textContent = '.bin .exe .o .obj .elf .so .dll, .py';
-						uploadIcon.className = 'fas fa-cloud-upload-alt';
+						uploadBox.classList.remove("uploading");
+						uploadText.textContent = "Drop file here or click to upload";
+						uploadSubtext.textContent = ".bin .exe .o .obj .elf .so .dll, .py";
+						uploadIcon.className = "fas fa-cloud-upload-alt";
 					};
 
 					if (file.name.endsWith(".o") || file.name.endsWith(".obj")) {
@@ -1379,7 +1559,6 @@
 				}
 			}
 
-
 			// Perform calculation for a view
 			async function performCalculation(view) {
 				if (!currentFile) {
@@ -1427,7 +1606,7 @@
 
 						securityData = result;
 						showProgress("Processing security analysis...", 1000, () => {
-							displaySecurityResult(result);
+							displaySecurityResultHTML(result);
 							updateThreatBarsFromSecurity(result);
 							updateResultsFromSecurity(result);
 							showNotification("Security analysis completed successfully");
@@ -1514,7 +1693,8 @@
 					case "raw":
 						if (fileContent && currentFile) {
 							codeContent.textContent = getRawContentView();
-							statusReady.textContent = "Raw Code view - File content displayed";
+							statusReady.textContent =
+								"Raw Code view - File content displayed";
 						} else {
 							codeContent.textContent = getRawView();
 							statusReady.textContent = "Raw Code view - No file uploaded";
@@ -1525,13 +1705,16 @@
 
 						if (decompiledCode) {
 							codeContent.textContent = decompiledCode;
-							statusReady.textContent = "Ghidra Output view - Decompilation complete";
+							statusReady.textContent =
+								"Ghidra Output view - Decompilation complete";
 						} else if (currentFile) {
 							codeContent.textContent = getGhidraView();
-							statusReady.textContent = "Ghidra Output view - Ready for analysis";
+							statusReady.textContent =
+								"Ghidra Output view - Ready for analysis";
 						} else {
 							codeContent.textContent = getGhidraView();
-							statusReady.textContent = "Ghidra Output view - Upload a file first";
+							statusReady.textContent =
+								"Ghidra Output view - Upload a file first";
 						}
 						break;
 					case "heuristic":
@@ -1539,18 +1722,21 @@
 
 						if (enhancedCode) {
 							codeContent.textContent = enhancedCode;
-							statusReady.textContent = "Heuristic Enhanced view - Enhancement complete";
+							statusReady.textContent =
+								"Heuristic Enhanced view - Enhancement complete";
 						} else if (currentFile) {
 							codeContent.textContent = getHeuristicView();
-							statusReady.textContent = "Heuristic Enhanced view - Ready for analysis";
+							statusReady.textContent =
+								"Heuristic Enhanced view - Ready for analysis";
 						} else {
 							codeContent.textContent = getHeuristicView();
-							statusReady.textContent = "Heuristic Enhanced view - Upload a file first";
+							statusReady.textContent =
+								"Heuristic Enhanced view - Upload a file first";
 						}
 						break;
 					case "security":
 						if (securityData) {
-							displaySecurityResult(securityData);
+							displaySecurityResultHTML(securityData);
 							statusReady.textContent = "Security view - Analysis complete";
 						} else if (currentFile) {
 							codeContent.textContent = getSecurityView();
@@ -1560,7 +1746,476 @@
 							statusReady.textContent = "Security view - Upload a file first";
 						}
 						break;
+					case "calculation":
+						displayCalculationGuide();
+						statusReady.textContent =
+							"Calculation Guide - Static explanation of threat scoring";
+						break;
 				}
+			}
+
+			// HTML Table with Proper Formatting - NO BULLETS
+			function displaySecurityResultHTML(result) {
+				const functions = result.json_report?.functions || [];
+				const metrics = result.security_metrics?.metrics || {};
+				const radar = result.security_metrics?.radar_data || {};
+
+				// Calculate threat percentages
+				const maliciousCount = metrics.malicious_functions || 0;
+				const totalCount = functions.length;
+				const threatPercent = metrics.threat_percentage || 0;
+
+				// Determine overall threat level
+				const threatLevel = radar.threat_level || "unknown";
+				const threatLevelDisplay = threatLevel.toUpperCase();
+
+				// Sort functions: malicious first, then by confidence (descending)
+				const sortedFunctions = [...functions].sort((a, b) => {
+					const aMalicious = a.classification?.malicious === true;
+					const bMalicious = b.classification?.malicious === true;
+					const aConf = a.classification?.confidence || 0;
+					const bConf = b.classification?.confidence || 0;
+
+					if (aMalicious && !bMalicious) return -1;
+					if (!aMalicious && bMalicious) return 1;
+					return bConf - aConf;
+				});
+
+				// Build HTML content
+				let htmlContent = '<div class="security-report">';
+
+				// Report header
+				htmlContent += '<div class="report-header">';
+				htmlContent += '<div class="report-title">SECURITY ANALYSIS</div>';
+				htmlContent +=
+					'<div class="report-meta">===============================================================================</div>';
+				htmlContent += `<div class="report-meta">File: ${
+					result.file_analyzed || currentFile.name
+				}</div>`;
+				htmlContent += `<div class="report-meta">Date: ${new Date().toLocaleString()}</div>`;
+				htmlContent += `<div class="report-meta">Overall Threat: ${threatLevelDisplay} | Malicious: ${maliciousCount} of ${totalCount} | Threat %: ${threatPercent}%</div>`;
+				htmlContent += "</div>";
+
+				// Create table
+				htmlContent += "<table><thead><tr>";
+				htmlContent += "<th>No.</th>";
+				htmlContent += "<th>Function Name (Conf.)</th>";
+				htmlContent += "<th>Status</th>";
+				htmlContent += "<th>Behaviors/APIs</th>";
+				htmlContent += "<th>Main Threat & Explanation</th>";
+				htmlContent += "</tr></thead><tbody>";
+
+				// Add table rows
+				sortedFunctions.forEach((func, index) => {
+					const funcName = func.function;
+					const confidence = Math.round(
+						(func.classification?.confidence || 0) * 100
+					);
+					const isMalicious = func.classification?.malicious === true;
+
+					// Determine status
+					let statusText = "BENIGN";
+					let statusClass = "";
+					if (isMalicious) {
+						statusText = "MALICIOUS";
+						statusClass = "malicious";
+					} else if (
+						confidence > 50 &&
+						(func.classification?.behavioral_actions || []).length > 0
+					) {
+						statusText = "SUSPICIOUS";
+						statusClass = "suspicious";
+					} else {
+						statusClass = "benign";
+					}
+
+					// Get behaviors and APIs
+					const behaviors = func.classification?.behavioral_actions || [];
+					let behaviorsText = "";
+					let apiText = "";
+
+					if (behaviors.length > 0) {
+						const behaviorNames = behaviors.map((b) => b.behavior).join(", ");
+						behaviorsText = behaviorNames;
+
+						// Extract APIs from behaviors
+						const apis = behaviors
+							.flatMap((b) => b.apis || [])
+							.filter((api) => api && api.trim() !== "");
+						if (apis.length > 0) {
+							const uniqueApis = [...new Set(apis)];
+							apiText = `<br><small>APIs: ${uniqueApis.join(", ")}</small>`;
+						}
+					} else {
+						behaviorsText = "None detected";
+					}
+
+					// Get and format explanation - NO BULLETS
+					let explanation = func.classification?.explanation || "";
+					explanation = formatExplanationText(explanation);
+
+					// Add row to table
+					htmlContent += "<tr>";
+					htmlContent += `<td style="text-align: center;">${index + 1}</td>`;
+					htmlContent += `<td><strong>${funcName}</strong><br><small>(${confidence}%)</small></td>`;
+					htmlContent += `<td style="text-align: center; font-weight: bold; ${
+						statusClass === "malicious"
+							? "color: #c00;"
+							: statusClass === "suspicious"
+							? "color: #856404;"
+							: "color: #155724;"
+					}">${statusText}</td>`;
+					htmlContent += `<td>${behaviorsText}${apiText}</td>`;
+					htmlContent += `<td>${explanation}</td>`;
+					htmlContent += "</tr>";
+				});
+
+				// Close table
+				htmlContent += "</tbody></table>";
+
+				// Add threat summary
+				htmlContent += '<div class="section-divider"></div>';
+				htmlContent +=
+					'<div class="report-title">THREAT ANALYSIS SUMMARY</div>';
+				htmlContent +=
+					'<div class="report-meta">===============================================================================</div>';
+
+				if (radar.labels && radar.data) {
+					const highRisk = [];
+					const mediumRisk = [];
+					const lowRisk = [];
+
+					radar.labels.forEach((label, index) => {
+						const percentage = Math.round(radar.data[index] || 0);
+
+						if (percentage >= 70) {
+							highRisk.push({ label, percentage });
+						} else if (percentage >= 40) {
+							mediumRisk.push({ label, percentage });
+						} else if (percentage > 0) {
+							lowRisk.push({ label, percentage });
+						}
+					});
+
+					if (highRisk.length > 0) {
+						htmlContent += "<div><strong>HIGH RISK CATEGORIES:</strong></div>";
+						highRisk.forEach((cat) => {
+							htmlContent += `<div>${cat.label.replace(/_/g, " ")}: ${
+								cat.percentage
+							}% - ${getCategoryDescription(cat.label)}</div>`;
+						});
+						htmlContent += "<br>";
+					}
+
+					if (mediumRisk.length > 0) {
+						htmlContent +=
+							"<div><strong>MEDIUM RISK CATEGORIES:</strong></div>";
+						mediumRisk.forEach((cat) => {
+							htmlContent += `<div>${cat.label.replace(/_/g, " ")}: ${
+								cat.percentage
+							}% - ${getCategoryDescription(cat.label)}</div>`;
+						});
+						htmlContent += "<br>";
+					}
+
+					if (lowRisk.length > 0) {
+						htmlContent += "<div><strong>LOW RISK CATEGORIES:</strong></div>";
+						lowRisk.forEach((cat) => {
+							htmlContent += `<div>${cat.label.replace(/_/g, " ")}: ${
+								cat.percentage
+							}% - ${getCategoryDescription(cat.label)}</div>`;
+						});
+						htmlContent += "<br>";
+					}
+
+					// Add remaining categories with 0%
+					const zeroCategories = SECURITY_CATEGORIES.filter(
+						(cat) =>
+							!radar.labels.includes(cat) ||
+							radar.data[radar.labels.indexOf(cat)] === 0
+					);
+
+					if (zeroCategories.length > 0) {
+						htmlContent += "<div><strong>NO RISK DETECTED:</strong></div>";
+						zeroCategories.forEach((cat) => {
+							htmlContent += `<div>${cat.replace(/_/g, " ")}: 0%</div>`;
+						});
+						htmlContent += "<br>";
+					}
+				} else {
+					htmlContent += "<div>No threat category data available</div>";
+				}
+
+				// Add overall recommendation
+				htmlContent += '<div class="section-divider"></div>';
+				htmlContent += '<div class="report-title">OVERALL RECOMMENDATION</div>';
+				htmlContent +=
+					'<div class="report-meta">===============================================================================</div>';
+				htmlContent += '<div class="recommendation">';
+				htmlContent += getRecommendation(
+					threatLevel,
+					maliciousCount,
+					threatPercent
+				);
+				htmlContent += "</div>";
+				htmlContent += "</div>";
+
+				// Set HTML content
+				codeContent.innerHTML = htmlContent;
+				statusReady.textContent = `Security analysis complete - ${maliciousCount} malicious functions detected`;
+			}
+
+			function formatExplanationText(text) {
+				if (!text) return "No explanation available.";
+
+				// Remove all bullet characters and dashes
+				text = text.replace(/-\s*/g, "");
+
+				// Remove extra spaces and normalize
+				text = text.replace(/\s+/g, " ").trim();
+
+				// Split by key sections
+				const sections = text.split(
+					/(?=Confidence:|High-level malicious intent inferred:|Observed malicious behaviors:|Key extracted signals include:)/
+				);
+
+				let result = "";
+
+				sections.forEach((section) => {
+					section = section.trim();
+
+					if (section.startsWith("Recommendation:")) {
+						section =
+							"<strong>Recommendation:</strong> " +
+							section.substring("Recommendation:".length).trim();
+						result += section + "<br><br>";
+					} else if (
+						section.startsWith("High-level malicious intent inferred:")
+					) {
+						let intentText = section
+							.substring("High-level malicious intent inferred:".length)
+							.trim();
+						// Clean up formatting
+						intentText = intentText.replace(/\s*:\s*/, ": ");
+						result +=
+							"<strong>High-level malicious intent inferred:</strong><br>";
+						result += intentText + "<br><br>";
+					} else if (section.startsWith("Observed malicious behaviors:")) {
+						let behaviorsText = section
+							.substring("Observed malicious behaviors:".length)
+							.trim();
+						result += "<strong>Observed malicious behaviors:</strong><br>";
+						result += behaviorsText + "<br><br>";
+					} else if (section.startsWith("Key extracted signals include:")) {
+						let signalsText = section
+							.substring("Key extracted signals include:".length)
+							.trim();
+						// Clean up JSON formatting
+						signalsText = signalsText.replace(
+							/\{'type': 'api_category', 'category': '([^']+)', 'count': (\d+)\}/g,
+							"$1 APIs (count: $2)"
+						);
+						result += "<strong>Key extracted signals include:</strong><br>";
+						result += signalsText + "<br><br>";
+					}
+				});
+
+				// Clean up multiple line breaks
+				result = result.replace(/(<br>\s*){3,}/g, "<br><br>");
+				result = result.replace(/^<br>+/, "");
+				result = result.replace(/<br>+$/, "");
+
+				return result || "No explanation available.";
+			}
+
+			// Helper function to get category description
+			function getCategoryDescription(category) {
+				const descriptions = {
+					DATA_EXFILTRATION:
+						"Multiple functions attempting unauthorized data transmission",
+					PERSISTENCE: "Maintaining access after initial compromise",
+					PRIVILEGE_ESCALATION: "Privilege manipulation detected",
+					SURVEILLANCE: "Monitoring system activity",
+					DESTRUCTIVE: "Damaging or deleting system resources",
+					EVASION: "Some evasion techniques present",
+					DENIAL_OF_SERVICE: "Potential system resource denial attacks",
+					CREDENTIAL_THEFT: "Stealing authentication credentials",
+				};
+				return descriptions[category] || "Malicious activity detected";
+			}
+
+			// Get recommendation based on threat level
+			function getRecommendation(threatLevel, maliciousCount, threatPercent) {
+				switch (threatLevel) {
+					case "high":
+						return `IMMEDIATE QUARANTINE REQUIRED: This file contains ${maliciousCount} malicious functions with high confidence scores (${threatPercent}%). Primary threats include data exfiltration, denial of service, and privilege escalation. Do not execute in production environment.`;
+					case "medium":
+						return `REVIEW REQUIRED: This file contains ${maliciousCount} malicious functions with moderate to high confidence (${threatPercent}%). Suspicious behaviors detected that require investigation. Execute only in isolated, controlled environments.`;
+					case "low":
+						return `LOW RISK: Minimal malicious behavior detected (${threatPercent}% overall threat). The file appears to be mostly benign with some suspicious indicators. Safe for execution in monitored environments.`;
+					default:
+						return `INCONCLUSIVE: Insufficient data for complete assessment. Manual review recommended before any execution. Exercise caution when handling this file.`;
+				}
+			}
+
+			// Display calculation guide
+			function displayCalculationGuide() {
+				const guideContent = `╔══════════════════════════════════════════════════════════════════════════╗
+║                     THREAT BAR CALCULATION GUIDE                         ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+EXAMPLE: Banking Trojan Analysis (bankstealer.exe)
+
+===============================================================================
+1. INPUT DATA FROM SECURITY ANALYSIS API
+===============================================================================
+
+• Total functions analyzed: 20
+• Malicious functions detected: 3
+• Threat Percentage = (3 ÷ 20) × 100 = 15%
+
+===============================================================================
+2. FUNCTION 1: "steal_credentials" (confidence: 87%)
+===============================================================================
+
+BEHAVIORAL ACTIONS (weight: 1.0):
+1. "credential" → CREDENTIAL_THEFT
+   Score = 0.87 × 100 × 1.0 = 87.0 points
+
+2. "file_access" → DATA_EXFILTRATION
+   Score = 0.87 × 100 × 1.0 = 87.0 points
+
+TRIGGERS (weight: 0.5):
+• "credential" count=2 → CREDENTIAL_THEFT
+  Score = 0.87 × 100 × 0.5 × 2 = 87.0 points
+
+EXPLANATION MENTIONS (weight: 0.3):
+• Text mentions "CREDENTIAL_THEFT" → CREDENTIAL_THEFT
+  Score = 0.87 × 100 × 0.3 = 26.1 points
+
+• Text mentions "DATA_EXFILTRATION" → DATA_EXFILTRATION
+  Score = 0.87 × 100 × 0.3 = 26.1 points
+
+FUNCTION 1 TOTALS:
+CREDENTIAL_THEFT = 87.0 + 87.0 + 26.1 = 200.1 → CAPPED TO 100
+DATA_EXFILTRATION = 87.0 + 26.1 = 113.1 → CAPPED TO 100
+
+===============================================================================
+3. FUNCTION 2: "send_to_server" (confidence: 92%)
+===============================================================================
+
+BEHAVIORAL ACTIONS (weight: 1.0):
+1. "network" → DATA_EXFILTRATION
+   Score = 0.92 × 100 × 1.0 = 92.0 points
+
+2. "evasion" → EVASION
+   Score = 0.92 × 100 × 1.0 = 92.0 points
+
+TRIGGERS (weight: 0.5):
+1. "network" count=3 → DATA_EXFILTRATION
+   Score = 0.92 × 100 × 0.5 × 3 = 138.0 points
+
+2. "evasion" count=1 → EVASION
+   Score = 0.92 × 100 × 0.5 × 1 = 46.0 points
+
+FUNCTION 2 TOTALS:
+DATA_EXFILTRATION = 92.0 + 138.0 = 230.0 → CAPPED TO 100
+EVASION = 92.0 + 46.0 = 138.0 → CAPPED TO 100
+
+===============================================================================
+4. FUNCTION 3: "install_persistence" (confidence: 76%)
+===============================================================================
+
+BEHAVIORAL ACTIONS (weight: 1.0):
+1. "persistence" → PERSISTENCE
+   Score = 0.76 × 100 × 1.0 = 76.0 points
+
+FUNCTION 3 TOTALS:
+PERSISTENCE = 76.0
+
+===============================================================================
+5. COMBINE ALL FUNCTION SCORES
+===============================================================================
+
+CATEGORY               FUNCTION 1  FUNCTION 2  FUNCTION 3  TOTAL  CAPPED
+──────────────────────────────────────────────────────────────────────────
+DATA_EXFILTRATION         100         100          0        200    → 100
+CREDENTIAL_THEFT          100           0          0        100    → 100
+EVASION                     0         100          0        100    → 100
+PERSISTENCE                 0           0         76         76    → 76
+PRIVILEGE_ESCALATION        0           0          0          0    → 0
+SURVEILLANCE                0           0          0          0    → 0
+DESTRUCTIVE                 0           0          0          0    → 0
+DENIAL_OF_SERVICE           0           0          0          0    → 0
+
+===============================================================================
+6. FINAL THREAT LEVEL CALCULATION
+===============================================================================
+
+Average Score = (100 + 76 + 0 + 0 + 0 + 100 + 0 + 100) ÷ 8 = 376 ÷ 8 = 47.0
+
+THREAT LEVEL DETERMINATION:
+• 47.0 > 40 but < 70 → Threat Level = "MEDIUM"
+
+===============================================================================
+7. VISUALIZATION IN THREAT BARS
+===============================================================================
+
+DATA_EXFILTRATION      ██████████ 100%  (HIGH RISK)
+PERSISTENCE            ███████░░░  76%  (HIGH RISK)  
+PRIVILEGE_ESCALATION   ░░░░░░░░░░   0%  (NO RISK)
+SURVEILLANCE           ░░░░░░░░░░   0%  (NO RISK)
+DESTRUCTIVE            ░░░░░░░░░░   0%  (NO RISK)
+EVASION                ██████████ 100%  (HIGH RISK)
+DENIAL_OF_SERVICE      ░░░░░░░░░░   0%  (NO RISK)
+CREDENTIAL_THEFT       ██████████ 100%  (HIGH RISK)
+
+===============================================================================
+8. KEY FORMULAS
+===============================================================================
+
+1. Threat Percentage = (Malicious Functions ÷ Total Functions) × 100
+
+2. Category Score = Σ(Confidence × 100 × Weight × Evidence)
+
+   Weights:
+   • Behavioral Actions: 1.0
+   • API Triggers: 0.5 × count
+   • Text Mentions: 0.3
+
+3. Normalization: Score = min(100, max(0, Raw Score))
+
+4. Threat Level:
+   • HIGH: Average Score > 70%
+   • MEDIUM: 40% ≤ Average Score ≤ 70%
+   • LOW: 0% < Average Score < 40%
+   • UNKNOWN: Average Score = 0%
+
+===============================================================================
+9. TOOLTIP INFORMATION
+===============================================================================
+
+Hover over threat bars to see contributing functions:
+• DATA_EXFILTRATION (100%):
+  - steal_credentials (87% confidence)
+  - send_to_server (92% confidence)
+
+• CREDENTIAL_THEFT (100%):
+  - steal_credentials (87% confidence)
+
+• EVASION (100%):
+  - send_to_server (92% confidence)
+
+• PERSISTENCE (76%):
+  - install_persistence (76% confidence)
+
+===============================================================================
+INTERPRETATION:
+This malware steals data (100%), steals passwords (100%), tries to hide (100%),
+and installs itself permanently (76%). Overall threat level is MEDIUM (47/100).
+`;
+
+				codeContent.textContent = guideContent;
 			}
 
 			// Display Ghidra result
@@ -1571,7 +2226,8 @@
 
 ${result.decompiled_code}`;
 
-				statusReady.textContent = "Ghidra decompilation complete - Ready for further analysis";
+				statusReady.textContent =
+					"Ghidra decompilation complete - Ready for further analysis";
 
 				updateResults({
 					complexity: "Calculating...",
@@ -1590,7 +2246,8 @@ ${result.decompiled_code}`;
 
 ${result.decompiled_code}`;
 
-				statusReady.textContent = "Heuristic enhancement complete - Ready for security analysis";
+				statusReady.textContent =
+					"Heuristic enhancement complete - Ready for security analysis";
 
 				updateResults({
 					complexity: "Enhanced",
@@ -1600,102 +2257,20 @@ ${result.decompiled_code}`;
 				});
 			}
 
-			// Display security result - FIXED FOR RADAR
-			function displaySecurityResult(result) {
-				const metrics = result.security_metrics?.metrics || {};
-				const radar = result.security_metrics?.radar_data || {};
-				
-				let securityReport = `/* Security Analysis Report */
-/* File: ${result.file_analyzed || currentFile.name} */
-/* Analysis Time: ${new Date().toLocaleString()} */
-
-SUMMARY:
-========
-• Total Functions Analyzed: ${metrics.total_functions || 0}
-• Malicious Functions: ${metrics.malicious_functions || 0}
-• Benign Functions: ${(metrics.total_functions || 0) - (metrics.malicious_functions || 0)}
-• Threat Level: ${radar.threat_level || "unknown"}`;
-
-				// Add threat percentages from radar data
-				if (radar.labels && radar.data) {
-					securityReport += `\n\nTHREAT CATEGORIES:`;
-					radar.labels.forEach((label, index) => {
-						const percentage = Math.round(radar.data[index] || 0);
-						securityReport += `\n• ${label.replace(/_/g, ' ')}: ${percentage}%`;
-					});
-				}
-
-				securityReport += `\n\nDETAILED FINDINGS:
-==================`;
-
-				if (result.json_report?.functions) {
-					const allFunctions = result.json_report.functions;
-					
-					allFunctions.forEach((func, index) => {
-						const isMalicious = func.classification?.malicious === true;
-						
-						securityReport += `\n\n${index + 1}. ${func.function}`;
-						securityReport += `\n   Status: ${isMalicious ? 'MALICIOUS' : 'BENIGN'}`;
-						securityReport += `\n   Confidence: ${Math.round((func.classification?.confidence || 0) * 100)}%`;
-						securityReport += `\n   Explanation: ${func.classification?.explanation || 'No explanation provided'}`;
-						
-						const behaviors = func.classification?.behavioral_actions || [];
-						if (behaviors.length > 0) {
-							securityReport += `\n   Detected Behaviors:`;
-							behaviors.forEach(action => {
-								securityReport += `\n     - ${action.behavior}: ${action.apis?.join(', ') || 'No APIs'} (${action.reason || 'No reason'})`;
-							});
-						}
-						
-						const triggers = func.signals?.triggers || [];
-						if (triggers.length > 0) {
-							securityReport += `\n   Security Signals:`;
-							triggers.forEach(trigger => {
-								if (trigger.type === 'api_category') {
-									securityReport += `\n     - ${trigger.category}: ${trigger.count || 1} occurrence(s)`;
-								}
-							});
-						}
-						
-						const raw_counts = func.signals?.raw_counts || {};
-						if (Object.keys(raw_counts).length > 0) {
-							securityReport += `\n   Raw Counts:`;
-							for (const [key, value] of Object.entries(raw_counts)) {
-								if (value > 0) {
-									securityReport += `\n     - ${key}: ${value}`;
-								}
-							}
-						}
-					});
-				}
-
-				codeContent.textContent = securityReport;
-				statusReady.textContent = "Security analysis complete - Threat bars updated";
-
-				// Use the structured radar data from backend
-				if (radar.labels && radar.data && radar.data.length > 0) {
-					updateAllThreatBars({
-						labels: radar.labels,
-						data: radar.data,
-						threatLevel: radar.threat_level || "unknown",
-						contributingFunctions: radar.contributing_functions || {}
-					});
-				} else {
-					// If no radar data, show empty bars
-					resetThreatBars();
-				}
-			}
-
 			// ==================== THREAT BARS FUNCTIONS ====================
 
 			// Create a single threat bar element with tooltip
-			function createThreatBar(category, percentage, contributingFunctions = []) {
+			function createThreatBar(
+				category,
+				percentage,
+				contributingFunctions = []
+			) {
 				// Determine threat level and color class
 				let threatClass, colorClass;
 				if (percentage >= 70) {
 					threatClass = "high";
 					colorClass = "high";
-				} else if (percentage >= 30) {
+				} else if (percentage >= 40) {
 					threatClass = "medium";
 					colorClass = "medium";
 				} else if (percentage > 0) {
@@ -1707,14 +2282,16 @@ SUMMARY:
 				}
 
 				// Format category name for display
-				const displayName = category.replace(/_/g, ' ');
+				const displayName = category.replace(/_/g, " ");
 
 				// Create tooltip content
-				let tooltipContent = `<strong>${displayName}: ${Math.round(percentage)}%</strong>`;
-				
+				let tooltipContent = `<strong>${displayName}: ${Math.round(
+					percentage
+				)}%</strong>`;
+
 				if (contributingFunctions.length > 0) {
 					tooltipContent += `<br><small>Contributing functions:</small><br>`;
-					contributingFunctions.forEach(func => {
+					contributingFunctions.forEach((func) => {
 						tooltipContent += `• ${func.name} (${func.confidence}% confidence)<br>`;
 					});
 				} else {
@@ -1731,40 +2308,43 @@ SUMMARY:
 					</div>
 					<div class="threat-bar-track">
 						<div class="threat-bar-fill ${colorClass}" style="width: ${percentage}%" 
-							 data-tooltip="${tooltipContent.replace(/"/g, '&quot;')}"></div>
+							 data-tooltip="${tooltipContent.replace(/"/g, "&quot;")}"></div>
 					</div>
 				`;
 
 				// Add hover event for tooltip
-				const barFill = barElement.querySelector('.threat-bar-fill');
-				barFill.addEventListener('mouseenter', showTooltip);
-				barFill.addEventListener('mouseleave', hideTooltip);
+				const barFill = barElement.querySelector(".threat-bar-fill");
+				barFill.addEventListener("mouseenter", showTooltip);
+				barFill.addEventListener("mouseleave", hideTooltip);
 
 				return barElement;
 			}
 
 			// Show tooltip on hover
 			function showTooltip(e) {
-				const tooltipText = e.target.getAttribute('data-tooltip');
-				const tooltip = document.createElement('div');
-				tooltip.className = 'threat-tooltip';
+				const tooltipText = e.target.getAttribute("data-tooltip");
+				const tooltip = document.createElement("div");
+				tooltip.className = "threat-tooltip";
 				tooltip.innerHTML = tooltipText;
-				
+
 				// Position tooltip
 				const rect = e.target.getBoundingClientRect();
-				const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-				tooltip.style.left = (rect.left + scrollLeft) + 'px';
-				tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) + 'px';
-				
+				const scrollLeft =
+					window.pageXOffset || document.documentElement.scrollLeft;
+				const scrollTop =
+					window.pageYOffset || document.documentElement.scrollTop;
+				tooltip.style.left = rect.left + scrollLeft + "px";
+				tooltip.style.top =
+					rect.top + scrollTop - tooltip.offsetHeight - 10 + "px";
+
 				// Add to document
 				document.body.appendChild(tooltip);
-				
+
 				// Show with slight delay
 				setTimeout(() => {
-					tooltip.classList.add('show');
+					tooltip.classList.add("show");
 				}, 10);
-				
+
 				// Store reference for removal
 				e.target._tooltip = tooltip;
 			}
@@ -1777,21 +2357,21 @@ SUMMARY:
 				}
 			}
 
-			// Update threat bars from security data - FIXED FOR RADAR
+			// Update threat bars from security data
 			function updateThreatBarsFromSecurity(result) {
 				const radarData = result.security_metrics?.radar_data;
-				
+
 				// Use structured radar data if available
 				if (radarData && radarData.data && radarData.data.length > 0) {
 					updateAllThreatBars({
 						labels: radarData.labels || SECURITY_CATEGORIES,
 						data: radarData.data,
 						threatLevel: radarData.threat_level || "unknown",
-						contributingFunctions: radarData.contributing_functions || {}
+						contributingFunctions: radarData.contributing_functions || {},
 					});
 					return;
 				}
-				
+
 				// If no structured data, show empty bars
 				resetThreatBars();
 			}
@@ -1800,30 +2380,33 @@ SUMMARY:
 			function updateAllThreatBars(threatData) {
 				// Hide placeholder
 				threatPlaceholder.style.display = "none";
-				
+
 				// Clear existing bars
-				const existingBars = threatBarsWrapper.querySelectorAll('.threat-bar');
-				existingBars.forEach(bar => bar.remove());
+				const existingBars = threatBarsWrapper.querySelectorAll(".threat-bar");
+				existingBars.forEach((bar) => bar.remove());
 
 				// Update threat level indicator
-				const levelText = threatData.threatLevel.charAt(0).toUpperCase() + threatData.threatLevel.slice(1);
+				const levelText =
+					threatData.threatLevel.charAt(0).toUpperCase() +
+					threatData.threatLevel.slice(1);
 				threatLevel.textContent = levelText;
 				threatLevel.className = "threat-level " + threatData.threatLevel;
 
 				// Create bars for all categories
 				threatData.labels.forEach((label, index) => {
 					const percentage = threatData.data[index] || 0;
-					const contributingFunctions = threatData.contributingFunctions?.[label] || [];
+					const contributingFunctions =
+						threatData.contributingFunctions?.[label] || [];
 					const bar = createThreatBar(label, percentage, contributingFunctions);
 					threatBarsWrapper.appendChild(bar);
 				});
 
 				// Add a subtle animation delay for each bar
 				setTimeout(() => {
-					const bars = threatBarsWrapper.querySelectorAll('.threat-bar-fill');
+					const bars = threatBarsWrapper.querySelectorAll(".threat-bar-fill");
 					bars.forEach((bar, index) => {
 						setTimeout(() => {
-							bar.style.transition = 'width 0.8s ease-out';
+							bar.style.transition = "width 0.8s ease-out";
 						}, index * 50);
 					});
 				}, 100);
@@ -1832,12 +2415,12 @@ SUMMARY:
 			// Reset threat bars to placeholder state
 			function resetThreatBars() {
 				// Remove all threat bars
-				const existingBars = threatBarsWrapper.querySelectorAll('.threat-bar');
-				existingBars.forEach(bar => bar.remove());
-				
+				const existingBars = threatBarsWrapper.querySelectorAll(".threat-bar");
+				existingBars.forEach((bar) => bar.remove());
+
 				// Show placeholder
 				threatPlaceholder.style.display = "flex";
-				
+
 				// Reset threat level
 				threatLevel.textContent = "No Data";
 				threatLevel.className = "threat-level unknown";
@@ -1860,17 +2443,26 @@ SUMMARY:
 
 			// Update results panel
 			function updateResults(results) {
-				document.getElementById("resultComplexity").querySelector(".result-value").textContent = results.complexity;
-				document.getElementById("resultThreat").querySelector(".result-value").textContent = results.threat;
-				document.getElementById("resultVulns").querySelector(".result-value").textContent = results.vulns;
-				document.getElementById("resultSize").querySelector(".result-value").textContent = results.size;
+				document
+					.getElementById("resultComplexity")
+					.querySelector(".result-value").textContent = results.complexity;
+				document
+					.getElementById("resultThreat")
+					.querySelector(".result-value").textContent = results.threat;
+				document
+					.getElementById("resultVulns")
+					.querySelector(".result-value").textContent = results.vulns;
+				document
+					.getElementById("resultSize")
+					.querySelector(".result-value").textContent = results.size;
 
 				resultBoxes.forEach((box) => box.classList.add("active"));
 			}
 
 			// Export current view
 			function exportCurrentView() {
-				const blob = new Blob([codeContent.textContent], { type: "text/plain" });
+				let content = codeContent.textContent;
+				const blob = new Blob([content], { type: "text/plain" });
 				const url = URL.createObjectURL(blob);
 				const a = document.createElement("a");
 				a.href = url;
@@ -1879,6 +2471,8 @@ SUMMARY:
 				if (currentView === "ghidra") filename += "_ghidra";
 				else if (currentView === "heuristic") filename += "_enhanced";
 				else if (currentView === "security") filename += "_security";
+				else if (currentView === "calculation")
+					filename += "_calculation_guide";
 				else filename += "_raw";
 				filename += ".txt";
 
@@ -1960,7 +2554,10 @@ SUMMARY:
 			function getRawContentView() {
 				if (!currentFile || !fileContent) return "No file content available";
 
-				if (currentFile.name.endsWith(".o") || currentFile.name.endsWith(".obj")) {
+				if (
+					currentFile.name.endsWith(".o") ||
+					currentFile.name.endsWith(".obj")
+				) {
 					return `Raw File Content - ${currentFile.name}
 Size: ${formatFileSize(currentFile.size)}
 Format: Object File
@@ -1982,15 +2579,20 @@ Hex Dump (first 1024 bytes):\n`;
 								if (i + j < bytes.length) {
 									const byte = bytes[i + j];
 									hex += byte.toString(16).padStart(2, "0") + " ";
-									ascii += byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ".";
+									ascii +=
+										byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ".";
 								} else {
 									hex += "   ";
 								}
 							}
-							hexView += `${i.toString(16).padStart(8, "0")}: ${hex} ${ascii}\n`;
+							hexView += `${i
+								.toString(16)
+								.padStart(8, "0")}: ${hex} ${ascii}\n`;
 						}
 						if (currentFile.size > 1024) {
-							hexView += `\n... (${currentFile.size - 1024} more bytes truncated)`;
+							hexView += `\n... (${
+								currentFile.size - 1024
+							} more bytes truncated)`;
 						}
 					}
 
@@ -2044,7 +2646,9 @@ Note: Requires Ghidra decompilation first.`;
 
 			// Initialize
 			document.addEventListener("DOMContentLoaded", () => {
-				console.log("DeMa-AI Analysis Platform loaded with threat bars visualization and tooltips");
+				console.log(
+					"DeMa-AI Analysis Platform loaded with fixed security report formatting"
+				);
 				// Set up initial threat bars placeholder
 				resetThreatBars();
 			});
