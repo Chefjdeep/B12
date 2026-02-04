@@ -254,12 +254,14 @@ Ghidra is released under the **Apache License 2.0**. The complete license text i
 https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE
 
 ---
+
 ## **Team**
 
-[![Devdatt](https://img.shields.io/badge/Contributor-Devdatt-blue?style=flat&logo=github)](https://github.com/Dev-dot13)
-[![Member 2](https://img.shields.io/badge/Contributor-Jaydeep-blue?style=flat&logo=github)](https://github.com/Chefjdeep)
-[![Member 3](https://img.shields.io/badge/Contributor-Vardhan-blue?style=flat&logo=github)](https://github.com/vardhan-bang)
+[![Devdatt](https://img.shields.io/badge/Devdatt-4B0082?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Dev-dot13)
+[![Jaydeep](https://img.shields.io/badge/Jaydeep-4B0082?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Chefjdeep)
+[![Vardhan](https://img.shields.io/badge/Vardhan-4B0082?style=for-the-badge&logo=github&logoColor=white)](https://github.com/vardhan-bang)
 
+---
 
 ## Methodological Note
 Contemporary AI development tools were employed as part of modern software engineering practices during this project's creation.
