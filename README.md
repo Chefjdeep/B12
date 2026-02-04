@@ -7,29 +7,29 @@
 [![Research Use](https://img.shields.io/badge/Use-Research-yellow.svg)](#disclaimer)
 # **B12 - Intelligent Binary Analysis Platform**
 
-## 📋 **Project Overview**
+## **Project Overview**
 **B12** is an advanced binary analysis system that combines **Ghidra decompilation** with **heuristic enhancement** and **ML-based security analysis** into a unified web interface. The platform automates reverse engineering workflows from binary upload to threat visualization.
 
-## ⚠️ **DISCLAIMER**
+## **DISCLAIMER**
 **WARNING**: This project is for **educational and research purposes only**. Never execute decompiled or generated code on production systems. Use isolated environments exclusively.
 
 ---
 
-## ✨ **Core Features**
+## **Core Features**
 
-### **🔧 Multi-Function Enhancement**
+### **Multi-Function Enhancement**
 - **Intelligent function extraction**: Processes all user-defined functions individually
 - **Library filtering**: Automatically skips standard library functions (printf, malloc, etc.)
 - **Context-aware naming**: Preserves original function names with intelligent restoration
 - **Non-destructive output**: Enhanced functions appended below original for easy comparison
 
-### **🔒 Enhanced Security Analysis**
+### **Enhanced Security Analysis**
 - **8 Threat Categories**: DATA_EXFILTRATION, PERSISTENCE, PRIVILEGE_ESCALATION, SURVEILLANCE, DESTRUCTIVE, EVASION, DENIAL_OF_SERVICE, CREDENTIAL_THEFT
 - **Real-time Radar Charts**: Interactive threat visualization
 - **Behavior Mapping**: Converts ML behaviors to security categories
 - **Comprehensive Reporting**: Detailed function-by-function analysis
 
-### **📊 Advanced Analytics**
+### **Advanced Analytics**
 - **Per-function statistics**: Character-level improvement tracking
 - **Performance metrics**: Processing time and enhancement percentage tracking
 - **Threat scoring**: Severity assessment with pattern recognition
@@ -37,7 +37,7 @@
 
 ---
 
-## 🚀 **Quick Start**
+## **Quick Start**
 
 ### **Prerequisites**
 ```bash
@@ -77,7 +77,7 @@ Access: `http://localhost:5000`
 ## 🏗️ **Project Structure**
 ```
 B12/
-├── app.py                    # Main Flask application
+├── app.py                   # Main Flask application
 ├── enhance.py               # Heuristic enhancement module
 ├── classifier/              # Language classification
 │   └── predict_xgb.py  
@@ -88,7 +88,7 @@ B12/
 ├── Enhanced_Decompiled/    # Heuristic enhanced outputs
 ├── temp_saves/             # Temporary workspaces
 ├── ghidra/                 # Ghidra installation
-├── samples/                # Test binaries
+├── static/                 # Test binaries
 ├── security_api.py         # Security analysis API template
 ├── requirements.txt
 └── README.md
@@ -96,7 +96,7 @@ B12/
 
 ---
 
-## 🌐 **API Endpoints**
+## **API Endpoints**
 
 ### **Analysis Endpoints**
 | Endpoint | Method | Description |
@@ -116,10 +116,10 @@ B12/
 
 ---
 
-## 🔍 **Usage Workflow**
+## **Usage Workflow**
 
 ### **Step 1: Upload Binary**
-- Supported formats: `.o`, `.elf`, `.exe`, `.so`, `.dll`, `.bin`, `.rom`, `.img`, `.c`
+- Supported formats: `.bin`, `.py`, `.elf`, `.exe`, `.so`, `.dll`, `.o`, `.rom`
 - Drag-and-drop or click to upload
 
 ### **Step 2: Run Analysis**
@@ -131,11 +131,11 @@ B12/
 - **Raw View**: Original binary/object file content
 - **Ghidra Output**: Decompiled C code
 - **Enhanced Code**: Heuristically improved with readability enhancements
-- **Security Analysis**: Threat radar, malicious function detection, behavior analysis
+- **Security Analysis**: Threat Bars, malicious function detection, behavior analysis
 
 ---
 
-## ⚙️ **Configuration**
+## **Configuration**
 
 ### **Key Settings (`app.py`)**
 ```python
@@ -162,7 +162,7 @@ SECURITY_CATEGORIES = [
 
 ---
 
-## 📊 **Security Analysis Integration**
+## **Security Analysis Integration**
 
 ### **Expected API Response Format**
 Your ML endpoint should return:
@@ -202,7 +202,7 @@ Your ML endpoint should return:
 
 ---
 
-## 🛠️ **Troubleshooting**
+## **Troubleshooting**
 
 ### **Common Issues**
 1. **Ghidra not found**: Check `GHIDRA_PATH` in `app.py`
@@ -218,24 +218,45 @@ print(f"🔍 [DEBUG] Message here")
 
 ---
 
-## 📈 **Performance Notes**
+## **Performance Notes**
 - **Ghidra decompilation**: 30-120 seconds depending on binary size
 - **Heuristic enhancement**: 1-5 seconds per function
-- **Security analysis**: Depends on remote API response time
+- **Security analysis**: Depends on remote API response time(Timeout: 180s)
 - **Memory usage**: Moderate (200-500MB for large binaries)
 
 ---
 
-## 🔒 **Security Best Practices**
-1. **Isolated Execution**: Always use VMs or containers
-2. **Network Isolation**: Disable internet during malware analysis  
-3. **Sample Sources**: Use only from trusted research repositories
-4. **Legal Compliance**: Ensure proper authorization for all binaries
-5. **Data Protection**: Never upload sensitive/proprietary code
+## **Citations**
+
+### **Ghidra Reverse Engineering Framework**
+```bibtex
+@software{ghidra,
+  author = {National Security Agency (NSA)},
+  title = {Ghidra - Software Reverse Engineering Framework},
+  year = {2019},
+  publisher = {National Security Agency},
+  url = {https://ghidra-sre.org/},
+  note = {Version 11.0.3}
+}
+```
+
+### **References**
+1. **Ghidra Official Documentation** – National Security Agency, "Ghidra: An Open-Source Software Reverse Engineering Suite," 2019. Available: https://ghidra-sre.org/
+
+2. **Ghidra in Research** – K. Nance, B. Hay, and R. De Donato, "Ghidra," in *Reverse Engineering: An Introduction*, IEEE Security & Privacy, 2020.
+
+### **Required Attribution**
+When using Ghidra in publications or research, include the following acknowledgment:
+
+> "This research uses the Ghidra reverse engineering framework developed by the National Security Agency (NSA). Ghidra is released as open-source software under the Apache License 2.0."
+
+### **License Information**
+Ghidra is released under the **Apache License 2.0**. The complete license text is available at:  
+https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE
 
 ---
 
-## 📄 **License**
+## **License**
 This project is for educational and research purposes.
 
 ---
