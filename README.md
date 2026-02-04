@@ -74,7 +74,7 @@ Access: `http://localhost:5000`
 
 ---
 
-## 🏗️ **Project Structure**
+## **Project Structure**
 ```
 B12/
 ├── app.py                   # Main Flask application
@@ -245,8 +245,7 @@ print(f"🔍 [DEBUG] Message here")
 
 2. **Ghidra in Research** – K. Nance, B. Hay, and R. De Donato, "Ghidra," in *Reverse Engineering: An Introduction*, IEEE Security & Privacy, 2020.
 
-### **Required Attribution**
-When using Ghidra in publications or research, include the following acknowledgment:
+### **Attribution**
 
 > "This research uses the Ghidra reverse engineering framework developed by the National Security Agency (NSA). Ghidra is released as open-source software under the Apache License 2.0."
 
